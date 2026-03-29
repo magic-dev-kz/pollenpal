@@ -1,5 +1,14 @@
 # Changelog
 
+## v6.0 (2026-03-29) — Micro-interactions & Polish
+- **Score countUp**: Safety score animates from 0 to target value over 1 second with eased cubic interpolation on each data load
+- **Forecast card stagger**: 3 forecast cards appear with staggered delay (100ms/200ms/300ms) using opacity+transform transition
+- **Focus-visible**: All interactive elements (buttons, links, inputs, sliders, toggles) have explicit `:focus-visible` outline styles for keyboard navigation
+- **Medication taken toast**: Clicking "Took my meds" shows a green toast "Logged! Stay safe 🌿" for 2.5 seconds with slide-up animation
+- Service worker cache version bumped to v6.0
+- Version label updated to v6
+- All new animations respect `prefers-reduced-motion: reduce`
+
 ## v5.0 (2026-03-29) — Medication Log & Activity Insights
 - **Medication Log**: "Took my meds" button with timestamp logging. Weekly view (Mon-Sun) showing taken/missed status with green checkmarks and red crosses. All data persisted in localStorage
 - **Activity Recommendation**: After 3-day forecast, displays actionable guidance based on safety score — "Good for outdoor activities" (score 7+), "Limit outdoor time" (score 4-6), or "Stay inside" (score <4). Color-coded with icons

@@ -543,6 +543,8 @@ transition-duration:0.01ms!important;scroll-behavior:auto!important}
 .card,.forecast-card,.weather-item,.allergy-option{animation:none}
 .onboarding-overlay{animation:none}
 .med-banner,.threshold-alert,.cal-day:hover{animation:none;transform:none}
+.score-number.count-up{animation:none}
+.forecast-card.stagger-in{opacity:1;transform:none}
 }
 
 /* Medication Log */
@@ -592,6 +594,29 @@ background:var(--accent);color:#fff;padding:12px 24px;border-radius:12px;font-si
 font-weight:700;box-shadow:0 4px 20px rgba(56,161,105,0.3);z-index:400;
 animation:slideUp .4s cubic-bezier(0.34,1.56,0.64,1) both}
 @keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* v6: Medication taken toast */
+.med-taken-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+background:linear-gradient(135deg,#38A169,#2F855A);color:#fff;padding:14px 28px;border-radius:14px;
+font-size:0.95rem;font-weight:700;box-shadow:0 4px 24px rgba(56,161,105,0.35);z-index:400;
+animation:slideUp .4s cubic-bezier(0.34,1.56,0.64,1) both}
+
+/* v6: Score countUp animation */
+@keyframes countUp{from{opacity:0;transform:translate(-50%,-50%) scale(0.7)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.score-number.count-up{animation:countUp .6s cubic-bezier(0.34,1.56,0.64,1) both}
+
+/* v6: Forecast card stagger */
+.forecast-card.stagger-in{opacity:0;transform:translateY(20px) scale(0.95)}
+.forecast-card.stagger-visible{opacity:1;transform:translateY(0) scale(1);
+transition:opacity .4s cubic-bezier(0.34,1.56,0.64,1),transform .4s cubic-bezier(0.34,1.56,0.64,1)}
+
+/* v6: Focus-visible for all interactive elements */
+a:focus-visible,.btn-primary:focus-visible,.btn-secondary:focus-visible,
+.btn-retry:focus-visible,.btn-share:focus-visible,.btn-share-week:focus-visible,
+.btn-fav:focus-visible,.med-log-btn:focus-visible,.detect-btn:focus-visible,
+.allergy-option:focus-visible,.ob-search:focus-visible,.search-input:focus-visible,
+.threshold-slider:focus-visible,.alert-close:focus-visible,.med-dismiss:focus-visible,
+input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .oc-footer{text-align:center;padding:20px 16px 24px;margin-top:24px}
 .oc-footer a{font-size:.78rem;color:var(--text-muted,var(--text-secondary,#888));text-decoration:none;opacity:.6;transition:opacity .2s}
 .oc-footer a:hover{opacity:1}
@@ -922,6 +947,15 @@ function bindMedLog(){
   if(!btn||btn.disabled) return;
   btn.addEventListener('click',function(){
     logMedTaken();
+    // v6: Show green toast
+    var existingToast=document.querySelector('.med-taken-toast');
+    if(existingToast) existingToast.remove();
+    var toast=document.createElement('div');
+    toast.className='med-taken-toast';
+    toast.setAttribute('role','alert');
+    toast.textContent='Logged! Stay safe \uD83C\uDF3F';
+    document.body.appendChild(toast);
+    setTimeout(function(){if(toast.parentNode)toast.remove();},2500);
     // Re-render just the med log card
     var card=btn.closest('.card');
     if(card){
@@ -1541,8 +1575,8 @@ function renderDashboard(pollenData,weatherData){
     '<svg viewBox="0 0 180 180"><circle class="bg-ring" cx="90" cy="90" r="75"/>'+
     '<circle class="fg-ring" cx="90" cy="90" r="75" style="stroke:'+level.color+
     ';stroke-dasharray:'+circumference+';stroke-dashoffset:'+dashOffset+'"/></svg>'+
-    '<div class="score-number" style="color:'+level.color+'">'+
-    Math.floor(score)+'<span class="decimal">.'+Math.round((score%1)*10)+'</span></div></div>'+
+    '<div class="score-number count-up" style="color:'+level.color+'" data-target-score="'+score.toFixed(1)+'">'+
+    '0<span class="decimal">.0</span></div></div>'+
     '<div class="score-label" style="color:'+level.color+'">'+escapeHtml(level.label)+'</div>'+
     '<div class="score-sublabel">'+escapeHtml(level.sublabel)+'</div></section>';
 
@@ -1582,7 +1616,7 @@ function renderDashboard(pollenData,weatherData){
     '<div class="card-title"><span aria-hidden="true">\ud83d\udcc5</span> 3-Day Forecast</div>'+
     '<div class="forecast-row">';
   forecasts.forEach(function(f,i){
-    html+='<div class="forecast-card'+(i===0?' today':'')+'" aria-label="'+escapeHtml(f.day)+': score '+f.score+'">'+
+    html+='<div class="forecast-card stagger-in'+(i===0?' today':'')+'" data-stagger-delay="'+(i*100+100)+'" aria-label="'+escapeHtml(f.day)+': score '+f.score+'">'+
       '<div class="forecast-day">'+escapeHtml(f.day)+'</div>'+
       '<div class="forecast-icon">'+f.level.icon+'</div>'+
       '<div class="forecast-score" style="color:'+f.level.color+'">'+f.score.toFixed(1)+'</div>'+
@@ -1649,9 +1683,34 @@ function renderDashboard(pollenData,weatherData){
   // Update time
   html+='<div style="text-align:center;padding:16px;font-size:0.75rem;color:var(--text-secondary)">'+
     'Updated '+new Date().toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})+
-    ' \u2022 Data from Open-Meteo \u2022 v5</div>';
+    ' \u2022 Data from Open-Meteo \u2022 v6</div>';
 
   $('content-area').innerHTML=html;
+
+  // v6: Score countUp animation (0 -> target over 1s)
+  var scoreEl=document.querySelector('.score-number[data-target-score]');
+  if(scoreEl){
+    var target=parseFloat(scoreEl.getAttribute('data-target-score'));
+    var start=performance.now();
+    var duration=1000;
+    (function animateScore(){
+      var elapsed=performance.now()-start;
+      var progress=Math.min(elapsed/duration,1);
+      var eased=1-Math.pow(1-progress,3);
+      var current=target*eased;
+      scoreEl.childNodes[0].textContent=Math.floor(current);
+      var decimalSpan=scoreEl.querySelector('.decimal');
+      if(decimalSpan) decimalSpan.textContent='.'+Math.round((current%1)*10);
+      if(progress<1) requestAnimationFrame(animateScore);
+    })();
+  }
+
+  // v6: Forecast card stagger
+  var staggerCards=document.querySelectorAll('.forecast-card.stagger-in');
+  staggerCards.forEach(function(card){
+    var delay=parseInt(card.getAttribute('data-stagger-delay'))||100;
+    setTimeout(function(){card.classList.add('stagger-visible');},delay);
+  });
 
   // Bind share button
   var shareBtn=$('btn-share-score');
