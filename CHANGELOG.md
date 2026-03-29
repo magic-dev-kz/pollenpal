@@ -1,5 +1,19 @@
 # Changelog
 
+## v15.0 (2026-03-29) — Outdoor Countdown
+
+**Outdoor Countdown**
+- When safety score is 7+ (safe), shows "Good window: next X hours Y min" countdown until the next hour when score drops below 7
+- If score stays safe for the rest of the day, shows "Good window: rest of the day!"
+- Green-tinted banner with sun icon, displayed below the activity recommendation
+- Uses existing hourly pollen forecast data to find the drop-off hour
+
+### Technical
+- Service worker cache bumped to `pollenpal-v15.0`
+- Version label updated to v15
+
+---
+
 ## v14.0 (2026-03-29) — Indoor Activity Suggestions
 
 **Indoor Activity Suggestions**

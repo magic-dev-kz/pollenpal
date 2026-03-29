@@ -617,6 +617,12 @@ backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 [data-theme="dark"] .activity-rec-limit{color:#ECC94B}
 .activity-rec-stay{border-color:rgba(229,62,62,0.3);color:#E53E3E}
 [data-theme="dark"] .activity-rec-stay{color:#FC8181}
+.outdoor-countdown{display:flex;align-items:center;gap:10px;padding:12px 16px;
+margin-top:8px;border-radius:12px;background:rgba(56,161,105,0.08);
+border:1px solid rgba(56,161,105,0.2);font-size:0.85rem;color:var(--safe)}
+[data-theme="dark"] .outdoor-countdown{background:rgba(56,161,105,0.12)}
+.outdoor-countdown-icon{font-size:1.1rem;flex-shrink:0}
+.outdoor-countdown-time{font-weight:700;font-variant-numeric:tabular-nums;min-width:48px}
 
 /* Share Week Summary */
 .btn-share-week{display:flex;align-items:center;justify-content:center;gap:8px;
@@ -1080,6 +1086,32 @@ function renderActivityRec(score){
   return '<div class="activity-rec '+cssClass+'" aria-label="Activity recommendation">'+
     '<span class="activity-rec-icon" aria-hidden="true">'+icon+'</span>'+
     '<span>'+escapeHtml(text)+'</span></div>';
+}
+
+/* ============ v15: Outdoor Countdown ============ */
+function renderOutdoorCountdown(score,pollenData){
+  if(score<7||!pollenData||!pollenData.hourly) return '';
+  var hourIdx=getCurrentHourIndex();
+  var dropHour=-1;
+  for(var h=hourIdx+1;h<24;h++){
+    var pollen=getPollenForHour(pollenData,h);
+    var sc=calcScore(pollen);
+    if(sc<7){dropHour=h;break}
+  }
+  if(dropHour===-1) return '<div class="outdoor-countdown" aria-label="Outdoor window">'+
+    '<span class="outdoor-countdown-icon" aria-hidden="true">\u2600\uFE0F</span>'+
+    '<span>Good window: rest of the day!</span></div>';
+  var now=new Date();
+  var target=new Date(now);
+  target.setHours(dropHour,0,0,0);
+  var diffMs=target-now;
+  if(diffMs<=0) return '';
+  var hrs=Math.floor(diffMs/3600000);
+  var mins=Math.floor((diffMs%3600000)/60000);
+  var timeStr=hrs>0?(hrs+'h '+mins+'m'):(mins+'m');
+  return '<div class="outdoor-countdown" aria-label="Outdoor window countdown">'+
+    '<span class="outdoor-countdown-icon" aria-hidden="true">\u2600\uFE0F</span>'+
+    '<span>Good window: next <span class="outdoor-countdown-time">'+timeStr+'</span></span></div>';
 }
 
 /* ============ Share Week Summary ============ */
@@ -1839,6 +1871,8 @@ function renderDashboard(pollenData,weatherData){
   html+='</div>';
   // Activity Recommendation (based on today's score)
   html+=renderActivityRec(score);
+  // v15: Outdoor countdown
+  html+=renderOutdoorCountdown(score,pollenData);
   html+='</div>';
 
   // Weather factors
@@ -1910,7 +1944,7 @@ function renderDashboard(pollenData,weatherData){
   // Update time
   html+='<div style="text-align:center;padding:16px;font-size:0.75rem;color:var(--text-secondary)">'+
     'Updated '+new Date().toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})+
-    ' \u2022 Data from Open-Meteo \u2022 v14</div>';
+    ' \u2022 Data from Open-Meteo \u2022 v15</div>';
 
   // v13: Allergy Diary
   html+=renderAllergyDiary();
