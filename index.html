@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PollenPal - Allergy Forecast for Families</title>
+<meta name="description" content="Morning pollen forecast with actionable advice for allergy families. Know before you go outside.">
+<meta name="theme-color" content="#F0FFF4">
+<meta property="og:title" content="PollenPal — Allergy Weather Forecast">
+<meta property="og:description" content="Check pollen levels before you go outside. Safety score for allergy sufferers. Free, no tracking.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="PollenPal — Allergy Weather Forecast">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#F0FFF4;--bg-card:#FFFFFF;--text:#1A3A2A;--text-secondary:#3A5A4A;
+--border:#C6F6D5;--accent:#38A169;--accent-light:#68D391;
+--danger-low:#F6E05E;--danger-mid:#ED8936;--danger-high:#E53E3E;
+--safe:#48BB78;--safe-light:#C6F6D5;
+--radius:16px;--shadow:0 2px 12px rgba(26,58,42,0.08);
+--font:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',Roboto,sans-serif;
+}
+[data-theme="dark"]{
+--bg:#0A1A12;--bg-card:#122A1C;--text:#D6F5E0;--text-secondary:#9ABFA8;
+--border:#1A3A2A;--shadow:0 2px 12px rgba(0,0,0,0.3);
+}
+html{font-size:16px;scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;
+line-height:1.5;transition:background .3s,color .3s}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:inherit;color:inherit}
+a{color:var(--accent)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* Layout */
+.app{max-width:480px;margin:0 auto;min-height:100vh;position:relative}
+.main-content{padding:0 16px 32px}
+
+/* Location Bar */
+.location-bar{position:sticky;top:0;z-index:100;background:var(--bg);
+padding:12px 16px;display:flex;align-items:center;justify-content:space-between;
+border-bottom:1px solid var(--border);backdrop-filter:blur(10px);
+-webkit-backdrop-filter:blur(10px);transition:background .3s}
+.location-bar .city{font-size:1.1rem;font-weight:600;display:flex;align-items:center;gap:8px}
+.location-bar .city svg{width:18px;height:18px;fill:var(--accent)}
+.location-bar .actions{display:flex;gap:8px;align-items:center}
+.btn-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;
+justify-content:center;transition:background .2s}
+.btn-icon:hover,.btn-icon:focus-visible{background:var(--border)}
+.btn-icon svg{width:18px;height:18px;fill:var(--text-secondary)}
+
+/* Safety Score */
+.score-section{text-align:center;padding:32px 0 24px}
+.score-ring{position:relative;width:180px;height:180px;margin:0 auto 16px}
+.score-ring svg{width:180px;height:180px;transform:rotate(-90deg)}
+.score-ring circle{fill:none;stroke-width:10}
+.score-ring .bg-ring{stroke:var(--border)}
+.score-ring .fg-ring{stroke-linecap:round;transition:stroke-dashoffset 1s ease,stroke .5s}
+.score-number{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+font-size:3.5rem;font-weight:800;line-height:1}
+.score-number .decimal{font-size:1.8rem;font-weight:600}
+.score-label{font-size:1.25rem;font-weight:700;margin-bottom:4px}
+.score-sublabel{font-size:0.875rem;color:var(--text-secondary)}
+
+/* Cards */
+.card{background:var(--bg-card);border:1px solid var(--border);
+border-radius:var(--radius);padding:20px;margin-bottom:16px;
+box-shadow:var(--shadow);transition:background .3s,border-color .3s}
+.card-title{font-size:0.8rem;font-weight:700;text-transform:uppercase;
+letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:12px;
+display:flex;align-items:center;gap:6px}
+
+/* Character Comment */
+.comment-card{border-left:4px solid var(--accent);position:relative}
+.comment-card .avatar{width:40px;height:40px;border-radius:50%;
+background:var(--accent-light);display:flex;align-items:center;
+justify-content:center;font-size:1.2rem;flex-shrink:0}
+.comment-header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.comment-name{font-weight:700;font-size:0.95rem}
+.comment-text{font-size:0.95rem;line-height:1.6;color:var(--text)}
+
+/* Pollen Bars */
+.pollen-item{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.pollen-item:last-child{margin-bottom:0}
+.pollen-label{width:80px;font-size:0.8rem;font-weight:600;flex-shrink:0;
+text-transform:capitalize}
+.pollen-bar-bg{flex:1;height:10px;background:var(--border);border-radius:5px;
+overflow:hidden;position:relative}
+.pollen-bar-fill{height:100%;border-radius:5px;transition:width 1s ease;min-width:2px}
+.pollen-value{width:55px;text-align:right;font-size:0.8rem;font-weight:600;
+color:var(--text-secondary);flex-shrink:0}
+
+/* Forecast Cards */
+.forecast-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:0}
+.forecast-card{text-align:center;padding:16px 8px;border-radius:var(--radius);
+background:var(--bg-card);border:1px solid var(--border);box-shadow:var(--shadow);
+transition:transform .2s}
+.forecast-card:hover{transform:translateY(-2px)}
+.forecast-card.today{border-color:var(--accent);border-width:2px}
+.forecast-day{font-size:0.75rem;font-weight:700;text-transform:uppercase;
+color:var(--text-secondary);margin-bottom:8px}
+.forecast-icon{font-size:2rem;margin-bottom:4px}
+.forecast-score{font-size:1.5rem;font-weight:800}
+.forecast-label{font-size:0.7rem;color:var(--text-secondary);margin-top:2px}
+
+/* Weather Factors */
+.weather-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.weather-item{display:flex;align-items:center;gap:10px;padding:12px;
+border-radius:12px;background:var(--bg)}
+.weather-icon{font-size:1.3rem;width:32px;text-align:center}
+.weather-info .label{font-size:0.7rem;color:var(--text-secondary);text-transform:uppercase;
+font-weight:600;letter-spacing:0.03em}
+.weather-info .value{font-size:1rem;font-weight:700}
+
+/* Theme Toggle */
+.theme-toggle{position:relative}
+
+/* Search Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;
+display:flex;align-items:flex-start;justify-content:center;padding:60px 16px;
+opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s}
+.modal-overlay.active{opacity:1;visibility:visible}
+.modal{background:var(--bg-card);border-radius:var(--radius);width:100%;
+max-width:400px;padding:24px;box-shadow:0 8px 40px rgba(0,0,0,0.2);
+transform:translateY(-20px);transition:transform .3s}
+.modal-overlay.active .modal{transform:translateY(0)}
+.search-input{width:100%;padding:14px 16px;border:2px solid var(--border);
+border-radius:12px;font-size:1rem;background:var(--bg);outline:none;
+transition:border-color .2s}
+.search-input:focus{border-color:var(--accent)}
+.search-results{margin-top:12px;max-height:240px;overflow-y:auto}
+.search-result{padding:12px;border-radius:10px;cursor:pointer;
+display:flex;align-items:center;gap:10px;transition:background .15s}
+.search-result:hover,.search-result:focus-visible{background:var(--safe-light)}
+[data-theme="dark"] .search-result:hover,[data-theme="dark"] .search-result:focus-visible{background:var(--border)}
+.search-result .name{font-weight:600}
+.search-result .country{font-size:0.8rem;color:var(--text-secondary)}
+
+/* Onboarding */
+.onboarding-overlay{position:fixed;inset:0;z-index:300;background:var(--bg);
+display:flex;flex-direction:column;transition:opacity .5s}
+.onboarding-overlay.fade-out{opacity:0;pointer-events:none}
+.onboarding-content{flex:1;display:flex;flex-direction:column;
+align-items:center;justify-content:center;padding:32px 24px;max-width:420px;margin:0 auto;text-align:center}
+.onboarding-content h2{font-size:1.5rem;margin-bottom:8px}
+.onboarding-content p{color:var(--text-secondary);margin-bottom:24px;font-size:0.95rem}
+.ob-step-indicator{display:flex;gap:8px;margin-bottom:32px}
+.ob-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:background .3s}
+.ob-dot.active{background:var(--accent);width:24px;border-radius:4px}
+.allergy-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;
+width:100%;margin-bottom:24px}
+.allergy-option{padding:14px;border:2px solid var(--border);border-radius:12px;
+font-size:0.9rem;font-weight:600;transition:all .2s;display:flex;align-items:center;gap:8px}
+.allergy-option.selected{border-color:var(--accent);background:var(--safe-light)}
+[data-theme="dark"] .allergy-option.selected{background:rgba(56,161,105,0.15)}
+.allergy-option .check{width:20px;height:20px;border:2px solid var(--border);
+border-radius:6px;display:flex;align-items:center;justify-content:center;
+transition:all .2s;flex-shrink:0}
+.allergy-option.selected .check{background:var(--accent);border-color:var(--accent)}
+.allergy-option.selected .check::after{content:'';width:6px;height:10px;
+border:solid white;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-2px}
+.btn-primary{background:var(--accent);color:white;padding:16px 40px;
+border-radius:12px;font-size:1rem;font-weight:700;transition:transform .15s,opacity .15s;
+width:100%;max-width:300px}
+.btn-primary:hover{opacity:0.9;transform:scale(1.02)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.btn-secondary{color:var(--text-secondary);padding:12px;font-size:0.9rem;font-weight:600}
+
+/* Location detect */
+.detect-btn{display:flex;align-items:center;gap:8px;padding:14px 20px;
+border:2px solid var(--border);border-radius:12px;font-size:0.95rem;
+font-weight:600;width:100%;justify-content:center;margin-bottom:12px;
+transition:border-color .2s}
+.detect-btn:hover{border-color:var(--accent)}
+.detect-btn svg{width:20px;height:20px;fill:var(--accent)}
+.or-divider{color:var(--text-secondary);font-size:0.85rem;margin:8px 0}
+.ob-search{width:100%;padding:14px 16px;border:2px solid var(--border);
+border-radius:12px;font-size:1rem;background:var(--bg-card);outline:none;
+margin-bottom:8px;transition:border-color .2s}
+.ob-search:focus{border-color:var(--accent)}
+.ob-results{width:100%;max-height:180px;overflow-y:auto;margin-bottom:16px}
+
+/* Skeleton */
+.skeleton{background:linear-gradient(90deg,var(--border) 25%,var(--safe-light) 50%,var(--border) 75%);
+background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
+[data-theme="dark"] .skeleton{background:linear-gradient(90deg,var(--border) 25%,#1A3A2A 50%,var(--border) 75%);background-size:200% 100%}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skeleton-score{width:180px;height:180px;border-radius:50%;margin:0 auto 16px}
+.skeleton-text{height:16px;margin-bottom:8px;width:60%}
+.skeleton-card{height:120px;margin-bottom:16px;border-radius:var(--radius)}
+.skeleton-bar{height:10px;margin-bottom:14px;border-radius:5px}
+
+/* Error */
+.error-card{border-color:var(--danger-mid);text-align:center;padding:32px}
+.error-card .emoji{font-size:2rem;margin-bottom:8px}
+.error-card p{margin-bottom:16px;color:var(--text-secondary)}
+.btn-retry{background:var(--accent);color:white;padding:10px 24px;
+border-radius:10px;font-weight:600;font-size:0.9rem}
+
+/* Responsive */
+@media(max-width:380px){
+.forecast-row{grid-template-columns:repeat(3,1fr);gap:6px}
+.forecast-card{padding:12px 4px}
+.weather-grid{grid-template-columns:1fr}
+.allergy-grid{grid-template-columns:1fr}
+.score-ring{width:150px;height:150px}
+.score-ring svg{width:150px;height:150px}
+.score-number{font-size:2.8rem}
+}
+@media(min-width:768px){
+.app{max-width:520px}
+}
+
+/* Safety Alert Banner */
+.safety-alert{padding:12px 16px;display:flex;align-items:center;gap:10px;
+font-size:0.9rem;font-weight:600;position:relative;animation:slideDown .4s ease both}
+.safety-alert .alert-icon{font-size:1.2rem;flex-shrink:0}
+.safety-alert .alert-text{flex:1}
+.safety-alert .alert-sub{font-size:0.78rem;font-weight:400;opacity:0.85;display:block;margin-top:2px}
+.safety-alert .alert-close{width:28px;height:28px;border-radius:50%;display:flex;
+align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;
+background:rgba(255,255,255,0.2);transition:background .2s}
+.safety-alert .alert-close:hover{background:rgba(255,255,255,0.35)}
+.safety-alert-danger{background:#E53E3E;color:#fff}
+.safety-alert-warning{background:#C05621;color:#fff}
+.safety-alert-good{background:#38A169;color:#fff}
+@keyframes slideDown{from{opacity:0;transform:translateY(-100%)}to{opacity:1;transform:translateY(0)}}
+
+/* Favorite Locations */
+.saved-locations{margin-bottom:16px}
+.saved-locations .card-title{margin-bottom:8px}
+.saved-loc-item{display:flex;align-items:center;gap:10px;padding:12px;
+border-radius:12px;cursor:pointer;transition:background .15s;border:1px solid var(--border);
+margin-bottom:8px;background:var(--bg-card)}
+.saved-loc-item:hover{background:var(--safe-light)}
+[data-theme="dark"] .saved-loc-item:hover{background:var(--border)}
+.saved-loc-item .loc-icon{width:32px;height:32px;border-radius:50%;background:var(--safe-light);
+display:flex;align-items:center;justify-content:center;flex-shrink:0}
+[data-theme="dark"] .saved-loc-item .loc-icon{background:var(--border)}
+.saved-loc-item .loc-icon svg{width:16px;height:16px;fill:var(--accent)}
+.saved-loc-item .loc-name{font-weight:600;font-size:0.95rem;flex:1}
+.saved-loc-item .loc-remove{width:28px;height:28px;border-radius:50%;display:flex;
+align-items:center;justify-content:center;color:var(--text-secondary);font-size:0.9rem;
+transition:background .15s,color .15s;flex-shrink:0}
+.saved-loc-item .loc-remove:hover{background:rgba(229,62,62,0.1);color:#E53E3E}
+.btn-fav{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;
+justify-content:center;font-size:1.1rem;transition:transform .2s,background .2s}
+.btn-fav:hover{background:var(--border);transform:scale(1.15)}
+.btn-fav.is-fav{color:#ECC94B}
+.saved-empty{text-align:center;padding:24px;color:var(--text-secondary);font-size:0.9rem}
+
+/* Share Button */
+.btn-share{display:flex;align-items:center;justify-content:center;gap:8px;
+width:100%;padding:14px;border:2px solid var(--accent);border-radius:12px;
+font-size:0.95rem;font-weight:700;color:var(--accent);margin-top:8px;
+transition:background .2s,color .2s}
+.btn-share:hover{background:var(--accent);color:#fff}
+.btn-share svg{width:18px;height:18px;fill:currentColor}
+
+/* Animations */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.animate-in{animation:fadeInUp .5s ease both}
+.delay-1{animation-delay:.1s}
+.delay-2{animation-delay:.2s}
+.delay-3{animation-delay:.3s}
+.delay-4{animation-delay:.4s}
+
+/* Refresh anim */
+.refreshing svg{animation:spin .8s linear infinite}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+/* Print */
+@media print{.location-bar{position:static}.modal-overlay,.onboarding-overlay{display:none!important}}
+
+/* Reduced motion */
+@media(prefers-reduced-motion:reduce){
+*,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;
+transition-duration:0.01ms!important;scroll-behavior:auto!important}
+.forecast-card:hover{transform:none}
+.btn-primary:hover{transform:none}
+}
+</style>
+<link rel="manifest" href="manifest.json">
+</head>
+<body>
+<div class="app" id="app">
+<!-- Onboarding -->
+<div class="onboarding-overlay" id="onboarding" role="dialog" aria-label="Welcome to PollenPal" aria-modal="true" style="display:none">
+<div class="onboarding-content" id="ob-content"></div>
+</div>
+
+<!-- Location Bar -->
+<header class="location-bar" role="banner">
+<div class="city" id="city-display" aria-live="polite">
+<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/></svg>
+<span id="city-name">Loading...</span>
+</div>
+<div class="actions">
+<button class="btn-fav" id="btn-fav" aria-label="Save location" title="Save location" style="display:none">&#9734;</button>
+<button class="btn-icon" id="btn-change-city" aria-label="Change city" title="Change city">
+<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 10-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1114 9.5 4.5 4.5 0 019.5 14z"/></svg>
+</button>
+<button class="btn-icon" id="btn-settings" aria-label="Settings" title="Settings">
+<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1115.6 12 3.611 3.611 0 0112 15.6z"/></svg>
+</button>
+<button class="btn-icon" id="btn-refresh" aria-label="Refresh data" title="Refresh data">
+<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+</button>
+<button class="btn-icon theme-toggle" id="btn-theme" aria-label="Toggle dark mode" title="Toggle dark mode">
+<svg viewBox="0 0 24 24" aria-hidden="true" id="theme-icon"><path d="M12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 01-4.4 2.26 5.403 5.403 0 01-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+</button>
+</div>
+</header>
+
+<!-- Safety Alert Banner -->
+<div id="safety-alert" aria-live="assertive"></div>
+
+<!-- Main Content -->
+<main class="main-content" id="main-content" role="main" aria-label="Pollen forecast">
+<div id="content-area" aria-live="polite"></div>
+</main>
+
+<!-- Search Modal -->
+<div class="modal-overlay" id="search-modal" role="dialog" aria-label="Search city" aria-modal="true">
+<div class="modal">
+<input type="text" class="search-input" id="search-input" placeholder="Search city..." aria-label="City name" autocomplete="off">
+<div class="search-results" id="search-results" role="listbox" aria-label="Search results"></div>
+</div>
+</div>
+</div>
+
+<script>
+(function(){'use strict';
+
+/* ============ Utilities ============ */
+function escapeHtml(s){
+  if(typeof s!=='string') return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function $(id){return document.getElementById(id)}
+function qs(sel){return document.querySelector(sel)}
+
+var LS={
+  get:function(k){try{var v=localStorage.getItem('pp_'+k);return v?JSON.parse(v):null}catch(e){return null}},
+  set:function(k,v){try{localStorage.setItem('pp_'+k,JSON.stringify(v))}catch(e){}},
+  remove:function(k){try{localStorage.removeItem('pp_'+k)}catch(e){}}
+};
+
+/* ============ State ============ */
+var state={
+  location:LS.get('location')||null,
+  allergies:LS.get('allergies')||null,
+  onboarded:LS.get('onboarded')||false,
+  theme:LS.get('theme')||'light',
+  pollenData:null,
+  weatherData:null,
+  lastFetch:LS.get('lastFetch')||0
+};
+
+/* ============ Favorite Locations ============ */
+var MAX_SAVED_LOCATIONS=5;
+
+function getSavedLocations(){
+  return LS.get('locations')||[];
+}
+
+function saveLocation(loc){
+  var locs=getSavedLocations();
+  // Check if already saved (by lat/lon proximity)
+  for(var i=0;i<locs.length;i++){
+    if(Math.abs(locs[i].lat-loc.lat)<0.01 && Math.abs(locs[i].lon-loc.lon)<0.01) return false;
+  }
+  if(locs.length>=MAX_SAVED_LOCATIONS) return false;
+  locs.push({name:loc.name,lat:loc.lat,lon:loc.lon});
+  LS.set('locations',locs);
+  return true;
+}
+
+function removeLocation(idx){
+  var locs=getSavedLocations();
+  if(idx>=0&&idx<locs.length){
+    locs.splice(idx,1);
+    LS.set('locations',locs);
+  }
+}
+
+function isLocationSaved(loc){
+  if(!loc) return false;
+  var locs=getSavedLocations();
+  for(var i=0;i<locs.length;i++){
+    if(Math.abs(locs[i].lat-loc.lat)<0.01 && Math.abs(locs[i].lon-loc.lon)<0.01) return true;
+  }
+  return false;
+}
+
+function updateFavButton(){
+  var btn=$('btn-fav');
+  if(!state.location){btn.style.display='none';return}
+  btn.style.display='';
+  var saved=isLocationSaved(state.location);
+  btn.innerHTML=saved?'&#9733;':'&#9734;';
+  btn.classList.toggle('is-fav',saved);
+  btn.setAttribute('aria-label',saved?'Remove from saved':'Save location');
+  btn.title=saved?'Remove from saved':'Save location';
+}
+
+function renderSavedLocations(){
+  var locs=getSavedLocations();
+  if(locs.length===0){
+    $('content-area').innerHTML=
+      '<div class="saved-locations">'+
+      '<div class="card-title" style="padding-top:24px"><span aria-hidden="true">\ud83c\udf3b</span> Welcome to PollenPal</div>'+
+      '<div class="saved-empty">Search for a city to get started.<br>Your saved locations will appear here.</div></div>';
+    return;
+  }
+  var html='<div class="saved-locations" style="padding-top:16px">'+
+    '<div class="card-title"><span aria-hidden="true">\u2b50</span> Saved Locations</div>';
+  locs.forEach(function(loc,i){
+    html+='<div class="saved-loc-item" data-idx="'+i+'" data-lat="'+loc.lat+'" data-lon="'+loc.lon+'" data-name="'+escapeHtml(loc.name)+'">'+
+      '<div class="loc-icon"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg></div>'+
+      '<div class="loc-name">'+escapeHtml(loc.name)+'</div>'+
+      '<button class="loc-remove" data-idx="'+i+'" aria-label="Remove '+escapeHtml(loc.name)+'" title="Remove">&times;</button></div>';
+  });
+  html+='</div>';
+  $('content-area').innerHTML=html;
+
+  // Bind click events
+  document.querySelectorAll('.saved-loc-item').forEach(function(el){
+    el.addEventListener('click',function(e){
+      if(e.target.closest('.loc-remove')) return;
+      var lat=parseFloat(this.getAttribute('data-lat'));
+      var lon=parseFloat(this.getAttribute('data-lon'));
+      var name=this.getAttribute('data-name');
+      state.location={name:name,lat:lat,lon:lon};
+      LS.set('location',state.location);
+      updateFavButton();
+      loadData();
+    });
+  });
+  document.querySelectorAll('.loc-remove').forEach(function(btn){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      var idx=parseInt(this.getAttribute('data-idx'));
+      removeLocation(idx);
+      renderSavedLocations();
+      updateFavButton();
+    });
+  });
+}
+
+/* ============ Safety Alert ============ */
+function renderSafetyAlert(score){
+  var container=$('safety-alert');
+  if(!container) return;
+  var html='';
+  if(score<3){
+    html='<div class="safety-alert safety-alert-danger" role="alert">'+
+      '<span class="alert-icon" aria-hidden="true">\u26a0\ufe0f</span>'+
+      '<div class="alert-text">High pollen alert! Safety Score: '+score.toFixed(1)+'/10'+
+      '<span class="alert-sub">Consider staying indoors or wearing a mask</span></div>'+
+      '<button class="alert-close" aria-label="Dismiss alert">&times;</button></div>';
+  } else if(score<5){
+    html='<div class="safety-alert safety-alert-warning" role="alert">'+
+      '<span class="alert-icon" aria-hidden="true">\u26a0\ufe0f</span>'+
+      '<div class="alert-text">Elevated pollen levels! Safety Score: '+score.toFixed(1)+'/10'+
+      '<span class="alert-sub">Take precautions before going outside</span></div>'+
+      '<button class="alert-close" aria-label="Dismiss alert">&times;</button></div>';
+  } else if(score>8){
+    html='<div class="safety-alert safety-alert-good" role="alert">'+
+      '<span class="alert-icon" aria-hidden="true">\ud83c\udf3f</span>'+
+      '<div class="alert-text">Great day to go outside!'+
+      '<span class="alert-sub">Safety Score: '+score.toFixed(1)+'/10 — Enjoy the fresh air</span></div>'+
+      '<button class="alert-close" aria-label="Dismiss alert">&times;</button></div>';
+  }
+  container.innerHTML=html;
+  var closeBtn=container.querySelector('.alert-close');
+  if(closeBtn){
+    closeBtn.addEventListener('click',function(){
+      container.innerHTML='';
+    });
+  }
+}
+
+/* ============ Share Card ============ */
+function generateShareCard(score,cityName,pollenData){
+  var canvas=document.createElement('canvas');
+  var w=600,h=400;
+  canvas.width=w;canvas.height=h;
+  var ctx=canvas.getContext('2d');
+  // roundRect polyfill
+  if(!ctx.roundRect){ctx.roundRect=function(x,y,w,h,r){
+    r=Math.min(r,w/2,h/2);this.moveTo(x+r,y);this.lineTo(x+w-r,y);this.quadraticCurveTo(x+w,y,x+w,y+r);
+    this.lineTo(x+w,y+h-r);this.quadraticCurveTo(x+w,y+h,x+w-r,y+h);this.lineTo(x+r,y+h);
+    this.quadraticCurveTo(x,y+h,x,y+h-r);this.lineTo(x,y+r);this.quadraticCurveTo(x,y,x+r,y);
+  }}
+
+  // Background
+  var bg=ctx.createLinearGradient(0,0,0,h);
+  bg.addColorStop(0,'#F0FFF4');bg.addColorStop(1,'#C6F6D5');
+  ctx.fillStyle=bg;
+  ctx.beginPath();
+  ctx.roundRect(0,0,w,h,16);
+  ctx.fill();
+
+  // Score circle
+  var cx=w/2,cy=140,r=70;
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.fillStyle='#FFFFFF';ctx.fill();
+  ctx.lineWidth=8;
+  ctx.strokeStyle='#C6F6D5';
+  ctx.stroke();
+  // Score arc
+  var color=scoreColor(score);
+  var startAngle=-Math.PI/2;
+  var endAngle=startAngle+(Math.PI*2)*(score/10);
+  ctx.beginPath();ctx.arc(cx,cy,r,startAngle,endAngle);
+  ctx.strokeStyle=color;ctx.lineWidth=8;ctx.lineCap='round';ctx.stroke();
+  // Score text
+  ctx.fillStyle=color;
+  ctx.font='bold 42px -apple-system,BlinkMacSystemFont,Inter,sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(score.toFixed(1),cx,cy);
+
+  // City + date
+  ctx.fillStyle='#1A3A2A';
+  ctx.font='bold 18px -apple-system,BlinkMacSystemFont,Inter,sans-serif';
+  ctx.fillText(cityName||'Unknown',cx,cy+r+30);
+  ctx.fillStyle='#3A5A4A';
+  ctx.font='14px -apple-system,BlinkMacSystemFont,Inter,sans-serif';
+  ctx.fillText(new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}),cx,cy+r+52);
+
+  // Pollen bars
+  var hourIdx=getCurrentHourIndex();
+  var currentPollen=getPollenForHour(pollenData,hourIdx);
+  var barTypes=[POLLEN_TYPES[0],POLLEN_TYPES[1],POLLEN_TYPES[2]]; // Grass, Birch, Ragweed
+  var barY=cy+r+80;
+  var barWidth=200;
+  var barHeight=12;
+  var barX=cx-barWidth/2-40;
+
+  barTypes.forEach(function(t,i){
+    var y=barY+i*28;
+    var raw=currentPollen[t.key]||0;
+    var pct=Math.min(raw/t.max,1);
+    // Label
+    ctx.fillStyle='#3A5A4A';
+    ctx.font='600 12px -apple-system,BlinkMacSystemFont,Inter,sans-serif';
+    ctx.textAlign='right';
+    ctx.fillText(t.label,barX-8,y+barHeight/2+4);
+    // Bar background
+    ctx.fillStyle='#C6F6D5';
+    ctx.beginPath();ctx.roundRect(barX,y,barWidth,barHeight,6);ctx.fill();
+    // Bar fill
+    var fillW=Math.max(pct*barWidth,4);
+    ctx.fillStyle=pollenBarColor(raw,t.max);
+    ctx.beginPath();ctx.roundRect(barX,y,fillW,barHeight,6);ctx.fill();
+    // Value
+    ctx.fillStyle='#3A5A4A';
+    ctx.textAlign='left';
+    ctx.fillText(Math.round(raw)+'',barX+barWidth+8,y+barHeight/2+4);
+  });
+
+  // Branding
+  ctx.fillStyle='#68D391';
+  ctx.font='bold 13px -apple-system,BlinkMacSystemFont,Inter,sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('Checked with PollenPal \ud83c\udf3b',cx,h-20);
+
+  return canvas;
+}
+
+function shareScore(){
+  if(!state.pollenData||!state.location) return;
+  var hourIdx=getCurrentHourIndex();
+  var currentPollen=getPollenForHour(state.pollenData,hourIdx);
+  var score=calcScore(currentPollen);
+  var canvas=generateShareCard(score,state.location.name,state.pollenData);
+
+  canvas.toBlob(function(blob){
+    if(!blob) return;
+    var file=new File([blob],'pollenpal-score.png',{type:'image/png'});
+
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+      navigator.share({
+        title:'PollenPal Safety Score',
+        text:'Safety Score: '+score.toFixed(1)+'/10 in '+(state.location.name||'my city')+'. Check pollen levels with PollenPal!',
+        files:[file]
+      }).catch(function(){});
+    } else {
+      // Download fallback
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement('a');
+      a.href=url;a.download='pollenpal-score.png';
+      document.body.appendChild(a);a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){URL.revokeObjectURL(url)},1000);
+    }
+  },'image/png');
+}
+
+/* ============ Constants ============ */
+var POLLEN_TYPES=[
+  {key:'grass_pollen',label:'Grass',max:500,weight:0.25,emoji:'🌾'},
+  {key:'birch_pollen',label:'Birch',max:300,weight:0.20,emoji:'🌳'},
+  {key:'ragweed_pollen',label:'Ragweed',max:200,weight:0.20,emoji:'🌿'},
+  {key:'mugwort_pollen',label:'Mugwort',max:150,weight:0.15,emoji:'🍃'},
+  {key:'alder_pollen',label:'Alder',max:200,weight:0.10,emoji:'🪵'},
+  {key:'olive_pollen',label:'Olive',max:300,weight:0.10,emoji:'🫒'}
+];
+
+var SCORE_LEVELS=[
+  {min:8,label:'Excellent',sublabel:'Great day for outdoor activities',color:'#38A169',icon:'😊'},
+  {min:6,label:'Good',sublabel:'Most people can enjoy outdoors',color:'#68D391',icon:'🙂'},
+  {min:4,label:'Moderate',sublabel:'Sensitive individuals should be cautious',color:'#B7791F',icon:'😐'},
+  {min:2,label:'Poor',sublabel:'Consider limiting outdoor exposure',color:'#C05621',icon:'😟'},
+  {min:0,label:'Severe',sublabel:'Stay indoors if possible',color:'#E53E3E',icon:'😷'}
+];
+
+/* ============ Character Phrases (40+) ============ */
+var PHRASES={
+  excellent:[ // 8-10
+    "Beautiful day AND clean air! Perfect for the playground. Go enjoy it!",
+    "The air is wonderfully clear today. Your little one can play outside all day!",
+    "Almost zero pollen detected. What a gift! Time for a long park walk.",
+    "Fresh air alert! This is one of those rare perfect days. Make the most of it!",
+    "Nature is being kind today. All pollen counts are super low. Enjoy!",
+    "Your kid can run free today \u2014 the pollen counts are practically non-existent.",
+    "I checked everything twice \u2014 it's truly a clear day. No worries at all!",
+    "Go ahead and open those windows! The air is as clean as it gets today."
+  ],
+  excellent_rainy:[
+    "Rain is washing away the pollen! A post-rain walk could be magical today.",
+    "It's raining, which means even cleaner air than usual. Indoor morning, outdoor afternoon!"
+  ],
+  good:[ // 6-7
+    "Looking good overall! Just keep an eye on your child if they're extra sensitive.",
+    "A solid day ahead. Maybe avoid long hours in grassy areas, but otherwise enjoy!",
+    "Pollen is present but manageable. A normal dose of caution will do.",
+    "Good news \u2014 nothing alarming today. Standard precautions are enough.",
+    "Your family should be comfortable outside today with basic care.",
+    "Not perfect, but definitely a go-outside day. Just have meds handy.",
+    "Mild pollen in the air. Most kids will be just fine!",
+    "Pretty decent conditions! A quick antihistamine before the park is smart."
+  ],
+  good_windy:[
+    "Wind is picking up a bit, which can stir pollen. Maybe choose morning play over afternoon.",
+    "A bit breezy today \u2014 pollen might spike later. Early outings are better."
+  ],
+  moderate:[ // 4-5
+    "Birch pollen is moderate today. If your child is sensitive to trees, consider indoor play this morning.",
+    "Mixed signals today. Some pollen types are up. Watch for sneezing and act accordingly.",
+    "Take antihistamine 30 minutes before going outside. It makes a real difference!",
+    "Not the worst, not the best. Keep outdoor time shorter and watch for symptoms.",
+    "The air has some punch today. Sunglasses can actually help \u2014 they block pollen from eyes!",
+    "Consider an after-park shower today. Pollen sticks to hair and clothes.",
+    "Morning might be better than afternoon for outside time. Pollen rises with heat.",
+    "Your sensitive one might notice the air today. Have their inhaler or meds ready."
+  ],
+  moderate_rainy:[
+    "Rain is helping wash pollen away, but some types are still moderate. Stay alert.",
+    "The rain is your friend today! Post-rain is usually the best window for outside time."
+  ],
+  moderate_windy:[
+    "Wind + moderate pollen = be extra careful. The breeze carries allergens further.",
+    "Windy conditions are spreading the pollen around. Shorter outdoor sessions are wise."
+  ],
+  poor:[ // 2-3
+    "High grass pollen alert. Take antihistamine 30 minutes before going outside.",
+    "Today is a tough one. If you go out, keep it brief and stay away from fields.",
+    "Multiple pollen types are high. This is a day for indoor adventures!",
+    "I won't sugarcoat it \u2014 the air is rough today. Indoor play is the safest call.",
+    "Craft time! Baking! Building forts! Today's an indoor creativity day.",
+    "If you must go out: mask + sunglasses + change clothes when you return.",
+    "Your little one's body will thank you for staying in today. The pollen is aggressive.",
+    "High pollen day. Even a short trip to the store \u2014 consider driving with windows up."
+  ],
+  poor_windy:[
+    "High pollen PLUS wind \u2014 the worst combo. Please keep sensitive kids indoors.",
+    "The wind is making a bad pollen day even worse. Absolutely an indoor day."
+  ],
+  severe:[ // 0-1
+    "Pollen storm! Stay indoors if possible. If you must go out: mask + sunglasses + shower when you return.",
+    "RED ALERT \u2014 this is as bad as it gets. Keep all windows closed and air purifiers running.",
+    "Emergency pollen levels! Do NOT let sensitive children play outside today.",
+    "Today is a no-go. Even adults with mild allergies will feel this. Stay inside.",
+    "Extreme pollen detected across multiple types. This is a bunker day \u2014 stay cozy inside!",
+    "I know it's hard to keep kids in, but today their health depends on it. Indoor day!",
+    "The absolute worst air quality for allergies. Movies, games, crafts \u2014 anything indoors.",
+    "Critical pollen levels. If someone goes out, full protection: N95 mask, glasses, long sleeves."
+  ]
+};
+
+function getPhrase(score, weather){
+  var level, key;
+  if(score>=8){level='excellent';key='excellent';}
+  else if(score>=6){level='good';key='good';}
+  else if(score>=4){level='moderate';key='moderate';}
+  else if(score>=2){level='poor';key='poor';}
+  else{level='severe';key='severe';}
+
+  var pool=PHRASES[key].slice();
+  // Add weather variants
+  if(weather){
+    if(weather.rain>0.5 && PHRASES[key+'_rainy']) pool=pool.concat(PHRASES[key+'_rainy']);
+    if(weather.wind>20 && PHRASES[key+'_windy']) pool=pool.concat(PHRASES[key+'_windy']);
+  }
+  // Deterministic-ish daily pick
+  var day=new Date().getDate();
+  return pool[day%pool.length];
+}
+
+function getScoreLevel(score){
+  for(var i=0;i<SCORE_LEVELS.length;i++){
+    if(score>=SCORE_LEVELS[i].min) return SCORE_LEVELS[i];
+  }
+  return SCORE_LEVELS[SCORE_LEVELS.length-1];
+}
+
+/* ============ Score Calculation ============ */
+function calcScore(pollenValues){
+  var weightedSum=0;
+  POLLEN_TYPES.forEach(function(t){
+    var raw=pollenValues[t.key]||0;
+    var norm=Math.min(raw/t.max*100,100);
+    weightedSum+=norm*t.weight;
+  });
+  var s=Math.max(0,10-(weightedSum/10));
+  return Math.round(s*10)/10;
+}
+
+function getPollenForHour(data,hourIndex){
+  var vals={};
+  if(!data||!data.hourly){
+    POLLEN_TYPES.forEach(function(t){vals[t.key]=0});
+    return vals;
+  }
+  POLLEN_TYPES.forEach(function(t){
+    vals[t.key]=(data.hourly[t.key]&&data.hourly[t.key][hourIndex])||0;
+  });
+  return vals;
+}
+
+function getCurrentHourIndex(){
+  var h=new Date().getHours();
+  return Math.min(h,23);
+}
+
+function getDayAverage(data,dayOffset){
+  var start=dayOffset*24;
+  var end=start+24;
+  var sums={};
+  var count=0;
+  POLLEN_TYPES.forEach(function(t){sums[t.key]=0});
+  if(!data||!data.hourly) return sums;
+  for(var i=start;i<end&&i<(data.hourly.time||[]).length;i++){
+    POLLEN_TYPES.forEach(function(t){
+      sums[t.key]+=(data.hourly[t.key]&&data.hourly[t.key][i])||0;
+    });
+    count++;
+  }
+  if(count===0) return sums;
+  POLLEN_TYPES.forEach(function(t){sums[t.key]=sums[t.key]/count});
+  return sums;
+}
+
+/* ============ Color helpers ============ */
+function scoreColor(score){
+  if(score>=8) return '#38A169';
+  if(score>=6) return '#68D391';
+  if(score>=4) return '#B7791F';
+  if(score>=2) return '#C05621';
+  return '#E53E3E';
+}
+
+function pollenBarColor(raw,max){
+  var pct=Math.min(raw/max,1);
+  if(pct<0.25) return '#38A169';
+  if(pct<0.5) return '#B7791F';
+  if(pct<0.75) return '#C05621';
+  return '#E53E3E';
+}
+
+/* ============ Theme ============ */
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'');
+  var icon=$('theme-icon');
+  if(t==='dark'){
+    icon.innerHTML='<circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>';
+    document.querySelector('meta[name="theme-color"]').content='#0A1A12';
+  } else {
+    icon.innerHTML='<path d="M12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 01-4.4 2.26 5.403 5.403 0 01-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>';
+    document.querySelector('meta[name="theme-color"]').content='#F0FFF4';
+  }
+  state.theme=t;
+  LS.set('theme',t);
+}
+
+/* ============ API ============ */
+var CACHE_DURATION=3600000; // 1 hour
+
+function fetchJSON(url){
+  return fetch(url).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  });
+}
+
+function fetchPollenData(lat,lon){
+  var cacheKey='pollen_'+lat.toFixed(2)+'_'+lon.toFixed(2);
+  var cached=LS.get(cacheKey);
+  if(cached&&Date.now()-cached.ts<CACHE_DURATION){
+    return Promise.resolve(cached.data);
+  }
+  var url='https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+lat+
+    '&longitude='+lon+'&hourly=birch_pollen,grass_pollen,ragweed_pollen,mugwort_pollen,alder_pollen,olive_pollen&forecast_days=3';
+  return fetchJSON(url).then(function(data){
+    LS.set(cacheKey,{ts:Date.now(),data:data});
+    return data;
+  });
+}
+
+function fetchWeatherData(lat,lon){
+  var cacheKey='weather_'+lat.toFixed(2)+'_'+lon.toFixed(2);
+  var cached=LS.get(cacheKey);
+  if(cached&&Date.now()-cached.ts<CACHE_DURATION){
+    return Promise.resolve(cached.data);
+  }
+  var url='https://api.open-meteo.com/v1/forecast?latitude='+lat+
+    '&longitude='+lon+'&current=temperature_2m,relative_humidity_2m,wind_speed_10m,rain&daily=temperature_2m_max,temperature_2m_min';
+  return fetchJSON(url).then(function(data){
+    LS.set(cacheKey,{ts:Date.now(),data:data});
+    return data;
+  });
+}
+
+function searchCity(query){
+  return fetchJSON('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(query)+'&count=5&language=en');
+}
+
+/* ============ Rendering ============ */
+function renderSkeleton(){
+  $('content-area').innerHTML=
+    '<div style="text-align:center;padding:32px 0 24px">'+
+    '<div class="skeleton skeleton-score" style="margin:0 auto 16px"></div>'+
+    '<div class="skeleton skeleton-text" style="margin:0 auto 8px;width:40%"></div>'+
+    '<div class="skeleton skeleton-text" style="margin:0 auto;width:60%"></div></div>'+
+    '<div class="skeleton skeleton-card"></div>'+
+    '<div class="skeleton skeleton-card" style="height:180px"></div>'+
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">'+
+    '<div class="skeleton" style="height:120px;border-radius:16px"></div>'+
+    '<div class="skeleton" style="height:120px;border-radius:16px"></div>'+
+    '<div class="skeleton" style="height:120px;border-radius:16px"></div></div>'+
+    '<div class="skeleton skeleton-card" style="height:100px"></div>';
+}
+
+function renderError(msg){
+  $('content-area').innerHTML=
+    '<div class="card error-card animate-in">'+
+    '<div class="emoji" aria-hidden="true">😔</div>'+
+    '<p>'+escapeHtml(msg||'Unable to load pollen data. Please check your connection.')+'</p>'+
+    '<button class="btn-retry" onclick="window._ppRefresh()" aria-label="Try again">Try Again</button></div>';
+}
+
+function renderDashboard(pollenData,weatherData){
+  var hourIdx=getCurrentHourIndex();
+  var currentPollen=getPollenForHour(pollenData,hourIdx);
+  var score=calcScore(currentPollen);
+  var level=getScoreLevel(score);
+
+  var weather={
+    temp:weatherData.current?weatherData.current.temperature_2m:null,
+    humidity:weatherData.current?weatherData.current.relative_humidity_2m:null,
+    wind:weatherData.current?weatherData.current.wind_speed_10m:null,
+    rain:weatherData.current?weatherData.current.rain:null,
+    tempMax:weatherData.daily?weatherData.daily.temperature_2m_max[0]:null,
+    tempMin:weatherData.daily?weatherData.daily.temperature_2m_min[0]:null
+  };
+
+  var phrase=getPhrase(score,weather);
+  var circumference=2*Math.PI*75;
+  var pct=score/10;
+  var dashOffset=circumference*(1-pct);
+
+  // Forecasts
+  var forecasts=[];
+  var dayAfter=new Date();dayAfter.setDate(dayAfter.getDate()+2);
+  var dayNames=['Today','Tomorrow',dayAfter.toLocaleDateString('en-US',{weekday:'long'})];
+  for(var d=0;d<3;d++){
+    var avg=getDayAverage(pollenData,d);
+    var ds=calcScore(avg);
+    var dl=getScoreLevel(ds);
+    forecasts.push({day:dayNames[d],score:ds,level:dl});
+  }
+
+  // Personal relevance
+  var personalTypes=state.allergies||[];
+  var relevantWarnings=[];
+  if(personalTypes.length>0 && personalTypes[0]!=='not_sure'){
+    POLLEN_TYPES.forEach(function(t){
+      var tKey=t.label.toLowerCase();
+      if(personalTypes.indexOf(tKey)>-1){
+        var raw=currentPollen[t.key]||0;
+        var pctVal=raw/t.max;
+        if(pctVal>0.5){
+          relevantWarnings.push(t.label+' pollen is HIGH \u2014 this affects your family!');
+        }
+      }
+    });
+  }
+
+  var html='';
+
+  // Safety Score
+  html+='<section class="score-section animate-in" aria-label="Safety score">'+
+    '<div class="score-ring" role="img" aria-label="Safety score '+score+' out of 10">'+
+    '<svg viewBox="0 0 180 180"><circle class="bg-ring" cx="90" cy="90" r="75"/>'+
+    '<circle class="fg-ring" cx="90" cy="90" r="75" style="stroke:'+level.color+
+    ';stroke-dasharray:'+circumference+';stroke-dashoffset:'+dashOffset+'"/></svg>'+
+    '<div class="score-number" style="color:'+level.color+'">'+
+    Math.floor(score)+'<span class="decimal">.'+Math.round((score%1)*10)+'</span></div></div>'+
+    '<div class="score-label" style="color:'+level.color+'">'+escapeHtml(level.label)+'</div>'+
+    '<div class="score-sublabel">'+escapeHtml(level.sublabel)+'</div></section>';
+
+  // Personal warnings
+  if(relevantWarnings.length>0){
+    html+='<div class="card animate-in delay-1" style="border-left:4px solid var(--danger-high);padding:14px 16px">';
+    html+='<div class="card-title"><span aria-hidden="true">\u26a0\ufe0f</span> Personal Alert</div>';
+    relevantWarnings.forEach(function(w){
+      html+='<div style="font-size:0.9rem;font-weight:600;margin-bottom:4px">'+escapeHtml(w)+'</div>';
+    });
+    html+='</div>';
+  }
+
+  // Character comment
+  html+='<div class="card comment-card animate-in delay-1" aria-label="Daily advice">'+
+    '<div class="comment-header"><div class="avatar" aria-hidden="true">'+level.icon+'</div>'+
+    '<div class="comment-name">PollenPal</div></div>'+
+    '<div class="comment-text">'+escapeHtml(phrase)+'</div></div>';
+
+  // Pollen breakdown
+  html+='<div class="card animate-in delay-2" aria-label="Pollen breakdown">'+
+    '<div class="card-title"><span aria-hidden="true">\ud83c\udf3e</span> Pollen Breakdown</div>';
+  POLLEN_TYPES.forEach(function(t){
+    var raw=currentPollen[t.key]||0;
+    var pctW=Math.min(raw/t.max*100,100);
+    var color=pollenBarColor(raw,t.max);
+    var levelTxt=pctW<25?'Low':pctW<50?'Moderate':pctW<75?'High':'Very High';
+    html+='<div class="pollen-item" role="meter" aria-label="'+escapeHtml(t.label)+' pollen" aria-valuenow="'+Math.round(raw)+'" aria-valuemin="0" aria-valuemax="'+t.max+'">'+
+      '<div class="pollen-label">'+t.emoji+' '+escapeHtml(t.label)+'</div>'+
+      '<div class="pollen-bar-bg"><div class="pollen-bar-fill" style="width:'+Math.max(pctW,2)+'%;background:'+color+'"></div></div>'+
+      '<div class="pollen-value">'+Math.round(raw)+' <span style="font-size:0.65rem;opacity:0.7">'+escapeHtml(levelTxt)+'</span></div></div>';
+  });
+  html+='</div>';
+
+  // 3-day forecast
+  html+='<div class="card animate-in delay-3" aria-label="3-day forecast">'+
+    '<div class="card-title"><span aria-hidden="true">\ud83d\udcc5</span> 3-Day Forecast</div>'+
+    '<div class="forecast-row">';
+  forecasts.forEach(function(f,i){
+    html+='<div class="forecast-card'+(i===0?' today':'')+'" aria-label="'+escapeHtml(f.day)+': score '+f.score+'">'+
+      '<div class="forecast-day">'+escapeHtml(f.day)+'</div>'+
+      '<div class="forecast-icon">'+f.level.icon+'</div>'+
+      '<div class="forecast-score" style="color:'+f.level.color+'">'+f.score.toFixed(1)+'</div>'+
+      '<div class="forecast-label">'+escapeHtml(f.level.label)+'</div></div>';
+  });
+  html+='</div></div>';
+
+  // Weather factors
+  html+='<div class="card animate-in delay-4" aria-label="Weather factors">'+
+    '<div class="card-title"><span aria-hidden="true">\ud83c\udf24\ufe0f</span> Weather Factors</div>'+
+    '<div class="weather-grid">';
+
+  var windEffect=weather.wind!=null?(weather.wind>20?'Spreads pollen':weather.wind>10?'Mild effect':'Low impact'):'--';
+  var humidEffect=weather.humidity!=null?(weather.humidity>80?'Reduces airborne':weather.humidity>50?'Neutral':'Dries pollen'):'--';
+  var rainEffect=weather.rain!=null?(weather.rain>0.5?'Washing pollen!':weather.rain>0?'Light help':'No rain'):'--';
+  var tempEffect=weather.temp!=null?(weather.temp>25?'Boosts release':weather.temp>15?'Normal':'Slows pollen'):'--';
+
+  var weatherItems=[
+    {icon:'\ud83d\udca8',label:'Wind',value:(weather.wind!=null?weather.wind.toFixed(0)+' km/h':'--'),note:windEffect},
+    {icon:'\ud83d\udca7',label:'Humidity',value:(weather.humidity!=null?weather.humidity+'%':'--'),note:humidEffect},
+    {icon:'\ud83c\udf27\ufe0f',label:'Rain',value:(weather.rain!=null?weather.rain+' mm':'--'),note:rainEffect},
+    {icon:'\ud83c\udf21\ufe0f',label:'Temp',value:(weather.temp!=null?weather.temp.toFixed(0)+'\u00b0C':'--'),note:tempEffect}
+  ];
+  weatherItems.forEach(function(w){
+    html+='<div class="weather-item"><div class="weather-icon" aria-hidden="true">'+w.icon+'</div>'+
+      '<div class="weather-info"><div class="label">'+escapeHtml(w.label)+'</div>'+
+      '<div class="value">'+escapeHtml(w.value)+'</div>'+
+      '<div class="label" style="font-size:0.65rem;margin-top:2px">'+escapeHtml(w.note)+'</div></div></div>';
+  });
+  html+='</div></div>';
+
+  // Share button
+  html+='<button class="btn-share animate-in delay-4" id="btn-share-score" aria-label="Share safety score">'+
+    '<svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>'+
+    'Share Safety Score</button>';
+
+  // Update time
+  html+='<div style="text-align:center;padding:16px;font-size:0.75rem;color:var(--text-secondary)">'+
+    'Updated '+new Date().toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})+
+    ' \u2022 Data from Open-Meteo \u2022 v2</div>';
+
+  $('content-area').innerHTML=html;
+
+  // Bind share button
+  var shareBtn=$('btn-share-score');
+  if(shareBtn) shareBtn.addEventListener('click',shareScore);
+}
+
+/* ============ Data Loading ============ */
+function loadData(){
+  if(!state.location) return;
+  var lat=state.location.lat;
+  var lon=state.location.lon;
+
+  $('city-name').textContent=state.location.name||'Unknown';
+  $('safety-alert').innerHTML='';
+  renderSkeleton();
+
+  var btn=$('btn-refresh');
+  btn.classList.add('refreshing');
+
+  Promise.all([
+    fetchPollenData(lat,lon),
+    fetchWeatherData(lat,lon)
+  ]).then(function(results){
+    state.pollenData=results[0];
+    state.weatherData=results[1];
+    state.lastFetch=Date.now();
+    LS.set('lastFetch',state.lastFetch);
+    renderDashboard(state.pollenData,state.weatherData);
+    // Safety alert
+    var hourIdx=getCurrentHourIndex();
+    var currentPollen=getPollenForHour(state.pollenData,hourIdx);
+    var alertScore=calcScore(currentPollen);
+    renderSafetyAlert(alertScore);
+    updateFavButton();
+    btn.classList.remove('refreshing');
+  }).catch(function(err){
+    console.error('Fetch error:',err);
+    renderError('Unable to load pollen data. Please check your connection and try again.');
+    btn.classList.remove('refreshing');
+  });
+}
+
+function forceRefresh(){
+  if(!state.location) return;
+  var lat=state.location.lat.toFixed(2);
+  var lon=state.location.lon.toFixed(2);
+  LS.remove('pollen_'+lat+'_'+lon);
+  LS.remove('weather_'+lat+'_'+lon);
+  loadData();
+}
+window._ppRefresh=forceRefresh;
+
+/* ============ Onboarding ============ */
+function showOnboarding(){
+  var ob=$('onboarding');
+  ob.style.display='';
+  var step=1;
+  var selectedAllergies=[];
+  var selectedLocation=null;
+
+  function renderStep(){
+    var html='<div class="ob-step-indicator">';
+    for(var i=1;i<=3;i++){
+      html+='<div class="ob-dot'+(i===step?' active':'')+'"></div>';
+    }
+    html+='</div>';
+
+    if(step===1){
+      html+='<h2>What allergies does your family have?</h2>'+
+        '<p>Select all that apply so we can personalize your forecast.</p>'+
+        '<div class="allergy-grid" role="group" aria-label="Allergy types">';
+      var opts=[
+        {key:'grass',emoji:'🌾',label:'Grass'},
+        {key:'birch',emoji:'🌳',label:'Birch'},
+        {key:'ragweed',emoji:'🌿',label:'Ragweed'},
+        {key:'mugwort',emoji:'🍃',label:'Mugwort'},
+        {key:'alder',emoji:'🪵',label:'Alder'},
+        {key:'olive',emoji:'🫒',label:'Olive'},
+        {key:'not_sure',emoji:'❓',label:'Not Sure'}
+      ];
+      opts.forEach(function(o){
+        var sel=selectedAllergies.indexOf(o.key)>-1;
+        html+='<button class="allergy-option'+(sel?' selected':'')+'" data-key="'+o.key+'" '+
+          'role="checkbox" aria-checked="'+sel+'" aria-label="'+escapeHtml(o.label)+'">'+
+          '<div class="check"></div><span>'+o.emoji+' '+escapeHtml(o.label)+'</span></button>';
+      });
+      html+='</div><button class="btn-primary" id="ob-next1">Continue</button>';
+    }
+    else if(step===2){
+      html+='<h2>Where are you?</h2>'+
+        '<p>We need your location to check local pollen levels.</p>'+
+        '<button class="detect-btn" id="ob-detect">'+
+        '<svg viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0013 3.06V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>'+
+        'Detect My Location</button>'+
+        '<div class="or-divider">or search manually</div>'+
+        '<input type="text" class="ob-search" id="ob-search" placeholder="Type city name..." aria-label="Search city">'+
+        '<div class="ob-results" id="ob-results" role="listbox"></div>';
+      if(selectedLocation){
+        html+='<div style="margin-bottom:16px;font-weight:700;color:var(--accent)">'+
+          '\u2714 '+escapeHtml(selectedLocation.name+(selectedLocation.country?', '+selectedLocation.country:''))+'</div>';
+      }
+      html+='<button class="btn-primary" id="ob-next2"'+(selectedLocation?'':' disabled')+'>Continue</button>';
+    }
+    else if(step===3){
+      html+='<div style="font-size:3rem;margin-bottom:16px" aria-hidden="true">\ud83c\udf3b</div>'+
+        '<h2>You\'re All Set!</h2>'+
+        '<p>PollenPal will help you plan around pollen so your family can breathe easy.</p>'+
+        '<div style="text-align:left;width:100%;max-width:300px;margin:0 auto 24px">'+
+        '<div style="margin-bottom:8px">\u2705 Personalized pollen alerts</div>'+
+        '<div style="margin-bottom:8px">\u2705 3-day forecasts</div>'+
+        '<div style="margin-bottom:8px">\u2705 Actionable daily advice</div>'+
+        '<div>\u2705 No ads, no pill pushing</div></div>'+
+        '<button class="btn-primary" id="ob-go">Let\'s Go!</button>';
+    }
+
+    $('ob-content').innerHTML=html;
+    bindStepEvents();
+  }
+
+  function bindStepEvents(){
+    if(step===1){
+      var btns=document.querySelectorAll('.allergy-option');
+      btns.forEach(function(b){
+        b.addEventListener('click',function(){
+          var key=this.getAttribute('data-key');
+          if(key==='not_sure'){
+            selectedAllergies=['not_sure'];
+            // Deselect all others visually, select 'not_sure'
+            btns.forEach(function(btn){
+              if(btn.getAttribute('data-key')==='not_sure'){
+                btn.classList.add('selected');
+                btn.setAttribute('aria-checked','true');
+              } else {
+                btn.classList.remove('selected');
+                btn.setAttribute('aria-checked','false');
+              }
+            });
+          } else {
+            var idx=selectedAllergies.indexOf('not_sure');
+            if(idx>-1) selectedAllergies.splice(idx,1);
+            idx=selectedAllergies.indexOf(key);
+            if(idx>-1){
+              selectedAllergies.splice(idx,1);
+              this.classList.remove('selected');
+              this.setAttribute('aria-checked','false');
+            } else {
+              selectedAllergies.push(key);
+              this.classList.add('selected');
+              this.setAttribute('aria-checked','true');
+            }
+            // Deselect 'not_sure' visually
+            btns.forEach(function(btn){
+              if(btn.getAttribute('data-key')==='not_sure'){
+                btn.classList.remove('selected');
+                btn.setAttribute('aria-checked','false');
+              }
+            });
+          }
+        });
+      });
+      $('ob-next1').addEventListener('click',function(){
+        if(selectedAllergies.length===0) selectedAllergies=['not_sure'];
+        state.allergies=selectedAllergies;
+        LS.set('allergies',selectedAllergies);
+        step=2;renderStep();
+      });
+    }
+    else if(step===2){
+      var detectBtn=$('ob-detect');
+      if(detectBtn){
+        detectBtn.addEventListener('click',function(){
+          this.textContent='Detecting...';
+          this.disabled=true;
+          if(navigator.geolocation){
+            navigator.geolocation.getCurrentPosition(function(pos){
+              var lat=pos.coords.latitude;
+              var lon=pos.coords.longitude;
+              // Reverse geocode via Nominatim
+              fetchJSON('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lon+'&format=json')
+              .then(function(geo){
+                var cityName=(geo.address&&(geo.address.city||geo.address.town||geo.address.village))||null;
+                var country=(geo.address&&geo.address.country)||'';
+                if(cityName){
+                  selectedLocation={name:cityName,lat:lat,lon:lon,country:country};
+                } else {
+                  selectedLocation={name:lat.toFixed(2)+', '+lon.toFixed(2),lat:lat,lon:lon,country:''};
+                }
+                renderStep();
+              }).catch(function(){
+                selectedLocation={name:lat.toFixed(2)+', '+lon.toFixed(2),lat:lat,lon:lon,country:''};
+                renderStep();
+              });
+            },function(){
+              detectBtn.textContent='Detection failed. Search below.';
+              detectBtn.disabled=false;
+            },{timeout:10000});
+          } else {
+            detectBtn.textContent='Geolocation not supported';
+          }
+        });
+      }
+
+      var searchEl=$('ob-search');
+      var timer=null;
+      if(searchEl){
+        searchEl.addEventListener('input',function(){
+          var q=searchEl.value.trim();
+          clearTimeout(timer);
+          if(q.length<2){$('ob-results').innerHTML='';return}
+          timer=setTimeout(function(){
+            searchCity(q).then(function(data){
+              var res=$('ob-results');
+              if(!data.results||data.results.length===0){
+                res.innerHTML='<div style="padding:12px;color:var(--text-secondary);font-size:0.9rem">No cities found</div>';
+                return;
+              }
+              res.innerHTML=data.results.map(function(c){
+                return '<button class="search-result" role="option" data-lat="'+c.latitude+'" data-lon="'+c.longitude+'" data-name="'+escapeHtml(c.name)+'" data-country="'+escapeHtml(c.country||'')+'">'+
+                  '<svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-secondary)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>'+
+                  '<div><div class="name">'+escapeHtml(c.name)+'</div><div class="country">'+escapeHtml(c.country||'')+(c.admin1?', '+escapeHtml(c.admin1):'')+'</div></div></button>';
+              }).join('');
+              res.querySelectorAll('.search-result').forEach(function(r){
+                r.addEventListener('click',function(){
+                  selectedLocation={
+                    name:this.getAttribute('data-name'),
+                    lat:parseFloat(this.getAttribute('data-lat')),
+                    lon:parseFloat(this.getAttribute('data-lon')),
+                    country:this.getAttribute('data-country')
+                  };
+                  renderStep();
+                });
+              });
+            }).catch(function(){});
+          },350);
+        });
+        searchEl.focus();
+      }
+
+      var next2=$('ob-next2');
+      if(next2){
+        next2.addEventListener('click',function(){
+          if(!selectedLocation) return;
+          state.location=selectedLocation;
+          LS.set('location',selectedLocation);
+          step=3;renderStep();
+        });
+      }
+    }
+    else if(step===3){
+      $('ob-go').addEventListener('click',function(){
+        state.onboarded=true;
+        LS.set('onboarded',true);
+        ob.classList.add('fade-out');
+        setTimeout(function(){ob.style.display='none'},500);
+        loadData();
+      });
+    }
+  }
+
+  renderStep();
+}
+
+/* ============ Search Modal ============ */
+function openSearch(){
+  var modal=$('search-modal');
+  modal.classList.add('active');
+  var input=$('search-input');
+  input.value='';
+  $('search-results').innerHTML='';
+  setTimeout(function(){input.focus()},100);
+}
+
+var searchDebounceTimer=null;
+function closeSearch(){
+  clearTimeout(searchDebounceTimer);
+  $('search-modal').classList.remove('active');
+  $('btn-change-city').focus();
+}
+
+(function initSearch(){
+  $('btn-change-city').addEventListener('click',openSearch);
+  $('search-modal').addEventListener('click',function(e){
+    if(e.target===this) closeSearch();
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&$('search-modal').classList.contains('active')) closeSearch();
+  });
+
+  $('search-input').addEventListener('input',function(){
+    var q=this.value.trim();
+    clearTimeout(searchDebounceTimer);
+    if(q.length<2){$('search-results').innerHTML='';return}
+    searchDebounceTimer=setTimeout(function(){
+      searchCity(q).then(function(data){
+        var res=$('search-results');
+        if(!data.results||data.results.length===0){
+          res.innerHTML='<div style="padding:12px;color:var(--text-secondary)">No cities found</div>';
+          return;
+        }
+        res.innerHTML=data.results.map(function(c){
+          return '<button class="search-result" role="option" data-lat="'+c.latitude+'" data-lon="'+c.longitude+'" data-name="'+escapeHtml(c.name)+'" data-country="'+escapeHtml(c.country||'')+'">'+
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-secondary)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>'+
+            '<div><div class="name">'+escapeHtml(c.name)+'</div><div class="country">'+escapeHtml(c.country||'')+(c.admin1?', '+escapeHtml(c.admin1):'')+'</div></div></button>';
+        }).join('');
+        res.querySelectorAll('.search-result').forEach(function(r){
+          r.addEventListener('click',function(){
+            state.location={
+              name:this.getAttribute('data-name'),
+              lat:parseFloat(this.getAttribute('data-lat')),
+              lon:parseFloat(this.getAttribute('data-lon')),
+              country:this.getAttribute('data-country')
+            };
+            LS.set('location',state.location);
+            closeSearch();
+            loadData();
+          });
+        });
+      }).catch(function(){
+        $('search-results').innerHTML='<div style="padding:12px;color:var(--text-secondary)">Search failed. Try again.</div>';
+      });
+    },350);
+  });
+})();
+
+/* ============ Focus Trap ============ */
+function trapFocus(container){
+  container.addEventListener('keydown',function(e){
+    if(e.key!=='Tab') return;
+    var focusable=container.querySelectorAll('button:not([disabled]),input:not([disabled]),[tabindex]:not([tabindex="-1"]),a[href],select,textarea');
+    if(focusable.length===0){e.preventDefault();return}
+    var first=focusable[0];
+    var last=focusable[focusable.length-1];
+    if(e.shiftKey){
+      if(document.activeElement===first){e.preventDefault();last.focus()}
+    } else {
+      if(document.activeElement===last){e.preventDefault();first.focus()}
+    }
+  });
+}
+trapFocus($('onboarding'));
+trapFocus($('search-modal'));
+
+/* ============ Settings Overlay ============ */
+function openSettings(){
+  var existing=document.getElementById('settings-overlay');
+  if(existing){existing.remove()}
+  var overlay=document.createElement('div');
+  overlay.id='settings-overlay';
+  overlay.className='modal-overlay active';
+  overlay.setAttribute('role','dialog');
+  overlay.setAttribute('aria-label','Settings');
+  overlay.setAttribute('aria-modal','true');
+  var allergyKeys=state.allergies||[];
+  var opts=[
+    {key:'grass',emoji:'\ud83c\udf3e',label:'Grass'},
+    {key:'birch',emoji:'\ud83c\udf33',label:'Birch'},
+    {key:'ragweed',emoji:'\ud83c\udf3f',label:'Ragweed'},
+    {key:'mugwort',emoji:'\ud83c\udf43',label:'Mugwort'},
+    {key:'alder',emoji:'\ud83e\udeb5',label:'Alder'},
+    {key:'olive',emoji:'\ud83e\uded2',label:'Olive'},
+    {key:'not_sure',emoji:'\u2753',label:'Not Sure'}
+  ];
+  var inner='<div class="modal" style="max-width:380px">'+
+    '<h3 style="margin-bottom:16px;font-size:1.1rem">Settings</h3>'+
+    '<div style="margin-bottom:16px"><div style="font-weight:700;margin-bottom:8px;font-size:0.85rem;text-transform:uppercase;color:var(--text-secondary)">Your Allergies</div>'+
+    '<div class="allergy-grid" id="settings-allergy-grid">';
+  opts.forEach(function(o){
+    var sel=allergyKeys.indexOf(o.key)>-1;
+    inner+='<button class="allergy-option'+(sel?' selected':'')+'" data-key="'+escapeHtml(o.key)+'" '+
+      'role="checkbox" aria-checked="'+sel+'">'+
+      '<div class="check"></div><span>'+o.emoji+' '+escapeHtml(o.label)+'</span></button>';
+  });
+  inner+='</div></div>'+
+    '<div style="margin-bottom:16px"><div style="font-weight:700;margin-bottom:8px;font-size:0.85rem;text-transform:uppercase;color:var(--text-secondary)">Location</div>'+
+    '<div style="font-size:0.95rem">'+escapeHtml(state.location?state.location.name+(state.location.country?', '+state.location.country:''):'Not set')+
+    ' <button id="settings-change-loc" style="color:var(--accent);font-weight:600;text-decoration:underline;background:none;border:none;cursor:pointer;font-size:0.9rem">Change</button></div></div>'+
+    '<button class="btn-primary" id="settings-save" style="margin-top:8px">Save & Close</button></div>';
+  overlay.innerHTML=inner;
+  document.body.appendChild(overlay);
+  trapFocus(overlay);
+
+  // Allergy toggles
+  var settingsAllergies=allergyKeys.slice();
+  var grid=document.getElementById('settings-allergy-grid');
+  var btns=grid.querySelectorAll('.allergy-option');
+  btns.forEach(function(b){
+    b.addEventListener('click',function(){
+      var key=this.getAttribute('data-key');
+      if(key==='not_sure'){
+        settingsAllergies=['not_sure'];
+        btns.forEach(function(btn){
+          if(btn.getAttribute('data-key')==='not_sure'){btn.classList.add('selected');btn.setAttribute('aria-checked','true')}
+          else{btn.classList.remove('selected');btn.setAttribute('aria-checked','false')}
+        });
+      } else {
+        var idx=settingsAllergies.indexOf('not_sure');
+        if(idx>-1) settingsAllergies.splice(idx,1);
+        idx=settingsAllergies.indexOf(key);
+        if(idx>-1){settingsAllergies.splice(idx,1);this.classList.remove('selected');this.setAttribute('aria-checked','false')}
+        else{settingsAllergies.push(key);this.classList.add('selected');this.setAttribute('aria-checked','true')}
+        btns.forEach(function(btn){if(btn.getAttribute('data-key')==='not_sure'){btn.classList.remove('selected');btn.setAttribute('aria-checked','false')}});
+      }
+    });
+  });
+
+  document.getElementById('settings-change-loc').addEventListener('click',function(){
+    overlay.remove();openSearch();
+  });
+  function closeSettings(){
+    overlay.remove();
+    $('btn-settings').focus();
+  }
+  document.getElementById('settings-save').addEventListener('click',function(){
+    if(settingsAllergies.length===0) settingsAllergies=['not_sure'];
+    state.allergies=settingsAllergies;
+    LS.set('allergies',settingsAllergies);
+    closeSettings();
+    if(state.location) loadData();
+  });
+  overlay.addEventListener('click',function(e){if(e.target===overlay) closeSettings()});
+  overlay.addEventListener('keydown',function(e){if(e.key==='Escape') closeSettings()});
+}
+
+/* ============ Event Listeners ============ */
+$('btn-refresh').addEventListener('click',forceRefresh);
+$('btn-settings').addEventListener('click',openSettings);
+
+$('btn-fav').addEventListener('click',function(){
+  if(!state.location) return;
+  if(isLocationSaved(state.location)){
+    // Remove it
+    var locs=getSavedLocations();
+    for(var i=0;i<locs.length;i++){
+      if(Math.abs(locs[i].lat-state.location.lat)<0.01 && Math.abs(locs[i].lon-state.location.lon)<0.01){
+        removeLocation(i);break;
+      }
+    }
+  } else {
+    if(getSavedLocations().length>=MAX_SAVED_LOCATIONS){
+      alert('Maximum '+MAX_SAVED_LOCATIONS+' locations. Remove one first.');
+      return;
+    }
+    saveLocation(state.location);
+  }
+  updateFavButton();
+});
+
+$('btn-theme').addEventListener('click',function(){
+  applyTheme(state.theme==='dark'?'light':'dark');
+});
+
+// Keyboard nav
+document.addEventListener('keydown',function(e){
+  if(e.key==='/' && document.activeElement.tagName!=='INPUT'){
+    e.preventDefault();openSearch();
+  }
+});
+
+/* ============ Init ============ */
+applyTheme(state.theme);
+
+if(!state.onboarded){
+  showOnboarding();
+} else if(state.location){
+  updateFavButton();
+  loadData();
+} else {
+  // Onboarded but no location — show saved locations or onboarding
+  var savedLocs=getSavedLocations();
+  if(savedLocs.length>0){
+    renderSavedLocations();
+  } else {
+    showOnboarding();
+  }
+}
+
+/* ============ Service Worker ============ */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(function(e){
+    console.warn('SW registration failed:',e);
+  });
+}
+
+})();
+</script>
+</body>
+</html>
