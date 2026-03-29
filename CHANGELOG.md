@@ -1,5 +1,9 @@
 # Changelog
 
+## v16.0 (2026-03-29) — Forecast Accuracy
+
+- **Forecast Accuracy**: Shows "Yesterday's forecast was X% accurate" by comparing predicted vs actual pollen score
+- SW cache bumped to `pollenpal-v16.0`
 ## v15.0 (2026-03-29) — Outdoor Countdown
 
 **Outdoor Countdown**

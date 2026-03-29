@@ -1826,6 +1826,32 @@ function renderDashboard(pollenData,weatherData){
     '<div class="score-sublabel">'+escapeHtml(level.sublabel)+'</div>'+
     '<div class="updated-ago" id="updated-ago" data-ts="'+Date.now()+'">Updated just now</div></section>';
 
+  // v16: Forecast accuracy — compare yesterday's prediction with actual
+  (function(){
+    var today=new Date().toISOString().slice(0,10);
+    var yesterdayPred=store.get('forecast_pred');
+    // Save today's forecast (for tomorrow's tomorrow score = forecasts[1] if available)
+    if(forecasts.length>=2){
+      store.set('forecast_pred',{date:today,predictedScore:forecasts[1].score});
+    }
+    // Show accuracy if we have yesterday's prediction
+    if(yesterdayPred && yesterdayPred.date){
+      var predDate=new Date(yesterdayPred.date);
+      predDate.setDate(predDate.getDate()+1);
+      var predDateStr=predDate.toISOString().slice(0,10);
+      if(predDateStr===today && yesterdayPred.predictedScore!==undefined){
+        var predicted=yesterdayPred.predictedScore;
+        var actual=score;
+        var diff=Math.abs(predicted-actual);
+        var accuracyPct=Math.max(0,Math.round((1-diff/10)*100));
+        html+='<div class="card animate-in delay-1" style="text-align:center;padding:14px 16px">'+
+          '<div class="card-title"><span aria-hidden="true">\uD83C\uDFAF</span> Forecast Accuracy</div>'+
+          '<div style="font-size:0.9rem;margin-top:4px">Yesterday\'s forecast was <strong style="font-size:1.1rem">'+accuracyPct+'%</strong> accurate</div>'+
+          '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px">Predicted: '+predicted.toFixed(1)+' / Actual: '+actual.toFixed(1)+'</div></div>';
+      }
+    }
+  })();
+
   // Personal warnings
   if(relevantWarnings.length>0){
     html+='<div class="card animate-in delay-1" style="border-left:4px solid var(--danger-high);padding:14px 16px">';
