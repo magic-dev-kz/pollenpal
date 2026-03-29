@@ -1,5 +1,30 @@
 # Changelog
 
+## v12.0 (2026-03-29) — Quick-switch, Filters & Summary
+
+**Location Quick-Switch**
+- When 2+ locations are saved, horizontal swipe-like tab bar appears below the location bar
+- Tapping a tab instantly switches to that location and reloads data
+- Active location tab highlighted with accent border and background
+- Scrollable with snap behavior for many locations
+
+**Pollen Type Filter**
+- Toggle chips in the pollen breakdown card to show/hide individual pollen types
+- Useful for hiding irrelevant pollen types (e.g., olive pollen for non-Mediterranean users)
+- Hidden types persist across sessions via localStorage
+- Visual feedback: dimmed + strikethrough for hidden types
+
+**Daily Summary Notification Text**
+- Concise one-line summary inserted after the character comment: "Today: Safe to go out. Grass pollen low."
+- Color-coded circle icon (green/yellow/red) matching safety score
+- Combines safety recommendation with dominant pollen level
+
+### Technical
+- Service worker cache bumped to `pollenpal-v12.0`
+- Version label updated to v12
+
+---
+
 ## v11.0 (2026-03-29) — Micro-polish
 - Onboarding allergy option buttons larger (18px padding, min-height 56px) for easier mobile tapping
 - Score ring glow intensity now scales with score value via `--ring-glow-intensity`

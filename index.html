@@ -350,6 +350,40 @@ box-shadow:0 3px 12px rgba(56,161,105,0.2);transition:transform .2s,box-shadow .
 .btn-retry:hover{transform:translateY(-2px);box-shadow:0 5px 18px rgba(56,161,105,0.3),0 0 20px rgba(56,161,105,0.1)}
 .btn-retry:active{transform:scale(0.95)}
 
+/* v12: Location quick-switch tabs */
+.location-tabs{display:flex;gap:6px;overflow-x:auto;padding:8px 16px 4px;
+-webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-snap-type:x mandatory}
+.location-tabs::-webkit-scrollbar{display:none}
+.location-tab{flex-shrink:0;padding:8px 16px;border-radius:12px;font-size:0.82rem;
+font-weight:700;border:1.5px solid var(--glass-border);background:var(--glass-bg);
+backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+transition:all .25s cubic-bezier(0.34,1.56,0.64,1);scroll-snap-align:start;
+white-space:nowrap;cursor:pointer}
+.location-tab:hover{border-color:var(--accent-light);transform:translateY(-1px);box-shadow:var(--glow-sky)}
+.location-tab.active{border-color:var(--accent);
+background:linear-gradient(135deg,rgba(56,161,105,0.15),rgba(104,211,145,0.1));
+box-shadow:0 2px 12px rgba(56,161,105,0.2);color:var(--accent)}
+.location-tab:active{transform:scale(0.95)}
+
+/* v12: Pollen type filter */
+.pollen-filter{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.pollen-filter-chip{padding:5px 12px;border-radius:10px;font-size:0.72rem;font-weight:700;
+border:1.5px solid var(--glass-border);background:var(--glass-bg);
+backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+transition:all .2s;cursor:pointer;display:flex;align-items:center;gap:4px}
+.pollen-filter-chip:hover{border-color:var(--accent-light)}
+.pollen-filter-chip.hidden-type{opacity:0.4;text-decoration:line-through}
+.pollen-filter-chip.active-type{border-color:var(--accent);opacity:1;text-decoration:none}
+
+/* v12: Daily summary notification text */
+.daily-summary{padding:12px 16px;border-radius:14px;font-size:0.9rem;font-weight:600;
+margin-bottom:12px;display:flex;align-items:center;gap:10px;
+background:var(--glass-bg);border:1px solid var(--glass-border);
+backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+animation:cardIn .5s cubic-bezier(0.34,1.56,0.64,1) both}
+.daily-summary-icon{font-size:1.2rem;flex-shrink:0}
+.daily-summary-text{flex:1;line-height:1.4}
+
 /* Responsive */
 @media(max-width:380px){
 .forecast-row{grid-template-columns:repeat(3,1fr);gap:6px}
@@ -693,6 +727,9 @@ color:var(--text-secondary);font-size:1rem;transition:background .2s,color .2s}
 
 <!-- Safety Alert Banner -->
 <div id="safety-alert" aria-live="assertive"></div>
+
+<!-- v12: Location quick-switch tabs -->
+<div id="location-tabs-container"></div>
 
 <!-- Medication Reminder Banner -->
 <div id="med-reminder-banner" aria-live="polite"></div>
@@ -1854,7 +1891,7 @@ function renderDashboard(pollenData,weatherData){
   // Update time
   html+='<div style="text-align:center;padding:16px;font-size:0.75rem;color:var(--text-secondary)">'+
     'Updated '+new Date().toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})+
-    ' \u2022 Data from Open-Meteo \u2022 v11</div>';
+    ' \u2022 Data from Open-Meteo \u2022 v12</div>';
 
   $('content-area').innerHTML=html;
 
@@ -2518,6 +2555,135 @@ function dismissInstallBanner(){
     setTimeout(function(){if(banner.parentNode)banner.remove()},400);
   }
 }
+
+/* ============ v12: Location Quick-Switch Tabs ============ */
+function renderLocationTabs(){
+  var container=$('location-tabs-container');
+  if(!container) return;
+  var locs=getSavedLocations();
+  if(locs.length<2){container.innerHTML='';return}
+  var html='<div class="location-tabs" role="tablist" aria-label="Quick switch location">';
+  locs.forEach(function(loc,i){
+    var isActive=state.location&&Math.abs(loc.lat-state.location.lat)<0.01&&Math.abs(loc.lon-state.location.lon)<0.01;
+    html+='<button class="location-tab'+(isActive?' active':'')+'" role="tab" aria-selected="'+(isActive?'true':'false')+'" data-idx="'+i+'" data-lat="'+loc.lat+'" data-lon="'+loc.lon+'" data-name="'+escapeHtml(loc.name)+'">'+escapeHtml(loc.name)+'</button>';
+  });
+  html+='</div>';
+  container.innerHTML=html;
+  container.querySelectorAll('.location-tab').forEach(function(tab){
+    tab.addEventListener('click',function(){
+      var lat=parseFloat(this.getAttribute('data-lat'));
+      var lon=parseFloat(this.getAttribute('data-lon'));
+      var name=this.getAttribute('data-name');
+      state.location={name:name,lat:lat,lon:lon};
+      LS.set('location',state.location);
+      updateFavButton();
+      renderLocationTabs();
+      loadData();
+    });
+  });
+}
+
+/* ============ v12: Pollen Type Filter ============ */
+var hiddenPollenTypes=LS.get('hiddenPollenTypes')||[];
+
+function isPollenTypeVisible(key){
+  return hiddenPollenTypes.indexOf(key)===-1;
+}
+
+function togglePollenType(key){
+  var idx=hiddenPollenTypes.indexOf(key);
+  if(idx>-1){hiddenPollenTypes.splice(idx,1)}
+  else{hiddenPollenTypes.push(key)}
+  LS.set('hiddenPollenTypes',hiddenPollenTypes);
+}
+
+/* ============ v12: Daily Summary Notification Text ============ */
+function getDailySummaryText(score,pollenData){
+  var safetyText=score>=7?'Safe to go out':score>=4?'Use caution outdoors':'Stay indoors if possible';
+  // Find dominant pollen type
+  var hourIdx=getCurrentHourIndex();
+  var currentPollen=getPollenForHour(pollenData,hourIdx);
+  var highTypes=[];
+  POLLEN_TYPES.forEach(function(t){
+    var raw=currentPollen[t.key]||0;
+    var pct=raw/t.max;
+    if(pct>0.25){
+      var lvl=pct<0.5?'moderate':pct<0.75?'high':'very high';
+      highTypes.push(t.label+' pollen '+lvl);
+    }
+  });
+  var pollenInfo=highTypes.length>0?highTypes[0]:'All pollen low';
+  return 'Today: '+safetyText+'. '+pollenInfo+'.';
+}
+
+// Patch renderDashboard to include v12 features
+var _origRenderDashboard=renderDashboard;
+renderDashboard=function(pollenData,weatherData){
+  _origRenderDashboard(pollenData,weatherData);
+  // v12: Render location tabs
+  renderLocationTabs();
+  // v12: Add daily summary before pollen breakdown
+  var hourIdx=getCurrentHourIndex();
+  var currentPollen=getPollenForHour(pollenData,hourIdx);
+  var score=calcScore(currentPollen);
+  var summaryText=getDailySummaryText(score,pollenData);
+  var summaryIcon=score>=7?'\uD83D\uDFE2':score>=4?'\uD83D\uDFE1':'\uD83D\uDD34';
+  var summaryEl=document.createElement('div');
+  summaryEl.className='daily-summary';
+  summaryEl.setAttribute('aria-label','Daily summary');
+  summaryEl.innerHTML='<span class="daily-summary-icon" aria-hidden="true">'+summaryIcon+'</span><span class="daily-summary-text">'+escapeHtml(summaryText)+'</span>';
+  // Insert after the character comment card
+  var commentCard=document.querySelector('.comment-card');
+  if(commentCard&&commentCard.nextSibling){
+    commentCard.parentNode.insertBefore(summaryEl,commentCard.nextSibling);
+  }
+  // v12: Add pollen filter chips before pollen bars
+  var pollenCard=document.querySelector('[aria-label="Pollen breakdown"]');
+  if(pollenCard){
+    var cardTitle=pollenCard.querySelector('.card-title');
+    if(cardTitle){
+      var filterDiv=document.createElement('div');
+      filterDiv.className='pollen-filter';
+      POLLEN_TYPES.forEach(function(t){
+        var visible=isPollenTypeVisible(t.key);
+        var chip=document.createElement('button');
+        chip.className='pollen-filter-chip '+(visible?'active-type':'hidden-type');
+        chip.setAttribute('aria-label',(visible?'Hide ':'Show ')+t.label+' pollen');
+        chip.setAttribute('aria-pressed',visible?'true':'false');
+        chip.innerHTML=t.emoji+' '+t.label;
+        chip.addEventListener('click',function(){
+          togglePollenType(t.key);
+          // Update visibility of corresponding pollen item
+          var items=pollenCard.querySelectorAll('.pollen-item');
+          items.forEach(function(item){
+            var label=item.querySelector('.pollen-label');
+            if(label&&label.textContent.indexOf(t.label)>-1){
+              item.style.display=isPollenTypeVisible(t.key)?'':'none';
+            }
+          });
+          this.classList.toggle('active-type');
+          this.classList.toggle('hidden-type');
+          this.setAttribute('aria-pressed',isPollenTypeVisible(t.key)?'true':'false');
+          this.setAttribute('aria-label',(isPollenTypeVisible(t.key)?'Hide ':'Show ')+t.label+' pollen');
+        });
+        filterDiv.appendChild(chip);
+      });
+      cardTitle.parentNode.insertBefore(filterDiv,cardTitle.nextSibling);
+    }
+    // Apply initial hidden state
+    var items=pollenCard.querySelectorAll('.pollen-item');
+    items.forEach(function(item){
+      var label=item.querySelector('.pollen-label');
+      if(label){
+        POLLEN_TYPES.forEach(function(t){
+          if(label.textContent.indexOf(t.label)>-1 && !isPollenTypeVisible(t.key)){
+            item.style.display='none';
+          }
+        });
+      }
+    });
+  }
+};
 
 /* ============ Service Worker ============ */
 if('serviceWorker' in navigator){
