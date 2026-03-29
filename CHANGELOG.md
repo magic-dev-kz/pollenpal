@@ -1,5 +1,30 @@
 # Changelog
 
+## v8.0 (2026-03-29) — Activity Planner, Trend Chart & Season Alert
+
+**Outdoor Activity Planner**
+- "Best time to go outside today" card finds the hour with the lowest pollen from hourly data
+- Displays optimal time with score, status icon, and whether the hour has passed
+- Color-coded icon based on conditions: star (excellent), sun (acceptable), cloud (elevated)
+
+**Weekly Pollen Trend**
+- SVG line chart showing pollen safety scores across 7 days
+- Gradient fill under the line with color-coded dots per day
+- Score labels above each data point for quick reference
+- Day labels (Today, Tmrw, Mon, Tue, etc.) below the chart
+
+**Allergy Season Alert**
+- Detects when average daily safety score is below 5 for 3+ consecutive days
+- Shows a prominent banner: "Allergy Season Detected!" with practical advice
+- Recommendations include preventive antihistamines, keeping windows closed, post-outdoor showers
+- Automatically hidden when conditions improve
+
+### Technical
+- Service worker cache bumped to `pollenpal-v8.0`
+- Version label updated to v8
+
+---
+
 ## v7.0 (2026-03-30) — PWA Install, Auto-Refresh & Timestamp
 
 **PWA Install Prompt**

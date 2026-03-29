@@ -527,6 +527,10 @@ color:#C53030;border:1px solid rgba(229,62,62,0.2)}
 /* Print */
 @media print{.location-bar{position:static}.modal-overlay,.onboarding-overlay{display:none!important}}
 
+/* v8: Allergy Season Alert */
+.allergy-season-banner{border-left:4px solid var(--danger-high);
+background:linear-gradient(135deg,var(--glass-bg) 0%,rgba(229,62,62,0.06) 100%)}
+
 /* Reduced motion */
 @media(prefers-reduced-motion:reduce){
 *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;
@@ -1075,6 +1079,125 @@ function showCopiedToast(){
   toast.textContent='\u2705 Week summary copied to clipboard!';
   document.body.appendChild(toast);
   setTimeout(function(){if(toast.parentNode)toast.remove()},2500);
+}
+
+/* ============ v8: Outdoor Activity Planner ============ */
+function renderBestTimeCard(pollenData){
+  if(!pollenData||!pollenData.hourly||!pollenData.hourly.time) return '';
+  // Find hour with lowest combined pollen today (first 24 hours)
+  var bestHour=0;
+  var bestScore=0;
+  for(var h=0;h<24&&h<pollenData.hourly.time.length;h++){
+    var pollen=getPollenForHour(pollenData,h);
+    var sc=calcScore(pollen);
+    if(sc>bestScore){bestScore=sc;bestHour=h;}
+  }
+
+  var now=new Date();
+  var isPast=bestHour<now.getHours();
+  var timeStr=(bestHour<10?'0':'')+bestHour+':00';
+  var statusIcon=bestScore>=7?'\uD83C\uDF1F':bestScore>=4?'\u2600\uFE0F':'\u26C5';
+  var statusText=bestScore>=7?'Excellent conditions':bestScore>=4?'Acceptable conditions':'Still elevated pollen';
+
+  var html='<div class="card animate-in delay-3" aria-label="Best time to go outside">'+
+    '<div class="card-title"><span aria-hidden="true">\u23F0</span> Best Time to Go Outside Today</div>'+
+    '<div style="display:flex;align-items:center;gap:14px;padding:8px 0">'+
+    '<div style="font-size:2.4rem;line-height:1">'+statusIcon+'</div>'+
+    '<div><div style="font-size:1.3rem;font-weight:900;letter-spacing:-0.02em;'+
+    'background:linear-gradient(135deg,var(--text) 0%,var(--accent) 100%);'+
+    '-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">'+
+    timeStr+'</div>'+
+    '<div style="font-size:0.85rem;color:var(--text-secondary);font-weight:500">'+
+    escapeHtml(statusText)+' (score: '+bestScore.toFixed(1)+'/10)'+
+    (isPast?' \u2014 this hour has passed':'')+'</div></div></div></div>';
+  return html;
+}
+
+/* ============ v8: Weekly Pollen Trend Chart ============ */
+function renderWeeklyTrendChart(pollenData){
+  if(!pollenData||!pollenData.hourly) return '';
+  var scores=[];
+  var dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var today=new Date();
+  var labels=[];
+  for(var d=0;d<7;d++){
+    var avg=getDayAverage(pollenData,d);
+    var sc=calcScore(avg);
+    scores.push(sc);
+    var date=new Date(today);
+    date.setDate(today.getDate()+d);
+    labels.push(d===0?'Today':d===1?'Tmrw':dayNames[date.getDay()]);
+  }
+
+  // SVG line chart
+  var w=320,h=100,padX=32,padY=16;
+  var chartW=w-padX*2,chartH=h-padY*2;
+  var points=[];
+  for(var i=0;i<scores.length;i++){
+    var x=padX+(chartW/(scores.length-1))*i;
+    var y=padY+chartH-(scores[i]/10)*chartH;
+    points.push({x:x,y:y,score:scores[i]});
+  }
+
+  var pathD='M'+points.map(function(p){return p.x+','+p.y}).join(' L');
+  var areaD=pathD+' L'+points[points.length-1].x+','+(h-padY)+' L'+points[0].x+','+(h-padY)+' Z';
+
+  var svg='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:auto;display:block" aria-label="Weekly pollen trend chart">';
+  // Gradient fill under line
+  svg+='<defs><linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="var(--accent)" stop-opacity="0.25"/>'+
+    '<stop offset="100%" stop-color="var(--accent)" stop-opacity="0.02"/>'+
+    '</linearGradient></defs>';
+  // Area fill
+  svg+='<path d="'+areaD+'" fill="url(#trendFill)"/>';
+  // Line
+  svg+='<path d="'+pathD+'" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  // Dots and labels
+  for(var j=0;j<points.length;j++){
+    var col=scoreColor(points[j].score);
+    svg+='<circle cx="'+points[j].x+'" cy="'+points[j].y+'" r="4" fill="'+col+'" stroke="var(--bg-card,#fff)" stroke-width="2"/>';
+    svg+='<text x="'+points[j].x+'" y="'+(h-2)+'" text-anchor="middle" font-size="8" font-weight="700" fill="var(--text-secondary)" font-family="Inter,sans-serif">'+labels[j]+'</text>';
+    svg+='<text x="'+points[j].x+'" y="'+(points[j].y-8)+'" text-anchor="middle" font-size="7" font-weight="700" fill="'+col+'" font-family="Inter,sans-serif">'+points[j].score.toFixed(1)+'</text>';
+  }
+  svg+='</svg>';
+
+  var html='<div class="card animate-in delay-3" aria-label="Weekly pollen trend">'+
+    '<div class="card-title"><span aria-hidden="true">\uD83D\uDCC8</span> 7-Day Pollen Trend</div>'+
+    svg+'</div>';
+  return html;
+}
+
+/* ============ v8: Allergy Season Alert ============ */
+function renderAllergySeasonAlert(pollenData){
+  if(!pollenData||!pollenData.hourly) return '';
+  // Check if average score < 5 for 3 or more consecutive days
+  var consecutiveBad=0;
+  var maxConsecutive=0;
+  for(var d=0;d<7;d++){
+    var avg=getDayAverage(pollenData,d);
+    var sc=calcScore(avg);
+    if(sc<5){
+      consecutiveBad++;
+      if(consecutiveBad>maxConsecutive) maxConsecutive=consecutiveBad;
+    } else {
+      consecutiveBad=0;
+    }
+  }
+  if(maxConsecutive<3) return '';
+
+  var html='<div class="card animate-in delay-3" style="border-left:4px solid var(--danger-high);'+
+    'background:linear-gradient(135deg,var(--glass-bg) 0%,rgba(229,62,62,0.06) 100%)" '+
+    'aria-label="Allergy season alert" role="alert">'+
+    '<div class="card-title"><span aria-hidden="true">\u26A0\uFE0F</span> Allergy Season Detected!</div>'+
+    '<div style="font-size:0.9rem;line-height:1.6;color:var(--text)">'+
+    'Pollen levels have been elevated for <strong>'+maxConsecutive+'+ consecutive days</strong>. '+
+    'This pattern suggests an active allergy season. Consider:'+
+    '<ul style="margin:8px 0 0 16px;padding:0">'+
+    '<li>Taking daily antihistamines preventively</li>'+
+    '<li>Keeping windows closed</li>'+
+    '<li>Showering after outdoor activities</li>'+
+    '</ul></div></div>';
+  return html;
 }
 
 /* ============ Pollen Calendar (7-day) ============ */
@@ -1685,6 +1808,15 @@ function renderDashboard(pollenData,weatherData){
   });
   html+='</div></div>';
 
+  // v8: Outdoor Activity Planner
+  html+=renderBestTimeCard(pollenData);
+
+  // v8: Weekly Pollen Trend (SVG line chart)
+  html+=renderWeeklyTrendChart(pollenData);
+
+  // v8: Allergy Season Alert
+  html+=renderAllergySeasonAlert(pollenData);
+
   // Pollen Calendar (7-day)
   html+=renderPollenCalendar(pollenData);
 
@@ -1717,7 +1849,7 @@ function renderDashboard(pollenData,weatherData){
   // Update time
   html+='<div style="text-align:center;padding:16px;font-size:0.75rem;color:var(--text-secondary)">'+
     'Updated '+new Date().toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})+
-    ' \u2022 Data from Open-Meteo \u2022 v7</div>';
+    ' \u2022 Data from Open-Meteo \u2022 v8</div>';
 
   $('content-area').innerHTML=html;
 
