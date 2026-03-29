@@ -1891,7 +1891,10 @@ function renderDashboard(pollenData,weatherData){
   // Update time
   html+='<div style="text-align:center;padding:16px;font-size:0.75rem;color:var(--text-secondary)">'+
     'Updated '+new Date().toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})+
-    ' \u2022 Data from Open-Meteo \u2022 v12</div>';
+    ' \u2022 Data from Open-Meteo \u2022 v13</div>';
+
+  // v13: Allergy Diary
+  html+=renderAllergyDiary();
 
   $('content-area').innerHTML=html;
 
@@ -1954,6 +1957,9 @@ function renderDashboard(pollenData,weatherData){
 
   // Bind threshold slider
   bindThresholdSlider(score);
+
+  // v13: Allergy diary
+  initAllergyDiary();
 }
 
 /* ============ Data Loading ============ */
@@ -2684,6 +2690,100 @@ renderDashboard=function(pollenData,weatherData){
     });
   }
 };
+
+/* ============ v13: Allergy Diary ============ */
+function getAllergyDiaryEntries(){
+  return LS.get('allergyDiary')||[];
+}
+function saveAllergyDiaryEntry(text,emoji){
+  var entries=getAllergyDiaryEntries();
+  var today=new Date();
+  var dateStr=today.getFullYear()+'-'+(today.getMonth()+1<10?'0':'')+(today.getMonth()+1)+'-'+(today.getDate()<10?'0':'')+today.getDate();
+  entries.unshift({date:dateStr,text:text,emoji:emoji,ts:Date.now()});
+  if(entries.length>30) entries=entries.slice(0,30);
+  LS.set('allergyDiary',entries);
+}
+function renderAllergyDiary(){
+  var entries=getAllergyDiaryEntries().slice(0,7);
+  var emojis=['😊','😐','🤧','😷'];
+  var html='<div class="card animate-in delay-5" aria-label="Allergy diary">';
+  html+='<div class="card-title"><span aria-hidden="true">📓</span> Allergy Diary</div>';
+  html+='<div style="margin-bottom:12px;font-size:0.85rem;color:var(--text-secondary)">How do you feel today?</div>';
+  html+='<div style="display:flex;gap:8px;margin-bottom:10px" id="diary-emoji-row">';
+  emojis.forEach(function(e,i){
+    html+='<button class="diary-emoji-btn" data-emoji="'+e+'" style="font-size:24px;width:44px;height:44px;border-radius:12px;border:2px solid var(--border);background:var(--bg-card);cursor:pointer;transition:transform 0.15s,border-color 0.15s,box-shadow 0.15s" aria-label="Select '+e+'">'+e+'</button>';
+  });
+  html+='</div>';
+  html+='<textarea id="diary-text" placeholder="How are your allergies today?" style="width:100%;min-height:60px;max-height:120px;border-radius:12px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);padding:10px 12px;font-family:var(--font);font-size:0.9rem;resize:vertical;outline:none;transition:border-color 0.2s" rows="2"></textarea>';
+  html+='<button id="diary-save-btn" style="margin-top:8px;width:100%;padding:10px;border-radius:12px;background:var(--accent);color:#fff;font-weight:600;font-size:0.9rem;border:none;cursor:pointer;opacity:0.5;pointer-events:none;transition:opacity 0.2s,transform 0.15s" disabled>Save Entry</button>';
+
+  if(entries.length>0){
+    html+='<div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">';
+    html+='<div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:8px;font-weight:600">Recent entries</div>';
+    entries.forEach(function(entry){
+      var d=new Date(entry.date+'T00:00:00');
+      var dayStr=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      html+='<div style="display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.04)">';
+      html+='<span style="font-size:18px;min-width:26px">'+escapeHtml(entry.emoji||'📝')+'</span>';
+      html+='<div style="flex:1;min-width:0"><div style="font-size:0.8rem;color:var(--text-secondary)">'+escapeHtml(dayStr)+'</div>';
+      html+='<div style="font-size:0.85rem;color:var(--text)">'+escapeHtml(entry.text)+'</div></div></div>';
+    });
+    html+='</div>';
+  }
+  html+='</div>';
+  return html;
+}
+function initAllergyDiary(){
+  var selectedEmoji='';
+  var emojiRow=document.getElementById('diary-emoji-row');
+  var textArea=document.getElementById('diary-text');
+  var saveBtn=document.getElementById('diary-save-btn');
+  if(!emojiRow||!textArea||!saveBtn) return;
+
+  function updateSaveState(){
+    var hasText=textArea.value.trim().length>0;
+    var hasEmoji=selectedEmoji.length>0;
+    if(hasText&&hasEmoji){
+      saveBtn.disabled=false;
+      saveBtn.style.opacity='1';
+      saveBtn.style.pointerEvents='auto';
+    }else{
+      saveBtn.disabled=true;
+      saveBtn.style.opacity='0.5';
+      saveBtn.style.pointerEvents='none';
+    }
+  }
+
+  emojiRow.addEventListener('click',function(e){
+    var btn=e.target.closest('.diary-emoji-btn');
+    if(!btn) return;
+    selectedEmoji=btn.getAttribute('data-emoji');
+    var allBtns=emojiRow.querySelectorAll('.diary-emoji-btn');
+    allBtns.forEach(function(b){
+      b.style.borderColor='var(--border)';
+      b.style.transform='scale(1)';
+      b.style.boxShadow='none';
+    });
+    btn.style.borderColor='var(--accent)';
+    btn.style.transform='scale(1.15)';
+    btn.style.boxShadow='0 2px 12px rgba(56,161,105,0.2)';
+    updateSaveState();
+  });
+
+  textArea.addEventListener('input',updateSaveState);
+  textArea.addEventListener('focus',function(){textArea.style.borderColor='var(--accent)';});
+  textArea.addEventListener('blur',function(){textArea.style.borderColor='var(--border)';});
+
+  saveBtn.addEventListener('click',function(){
+    var text=textArea.value.trim();
+    if(!text||!selectedEmoji) return;
+    saveAllergyDiaryEntry(text,selectedEmoji);
+    // Refresh the diary section
+    if(state.pollenData&&state.weatherData){
+      renderDashboard(state.pollenData,state.weatherData);
+    }
+  });
+}
 
 /* ============ Service Worker ============ */
 if('serviceWorker' in navigator){

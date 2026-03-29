@@ -1,5 +1,20 @@
 # Changelog
 
+## v13.0 (2026-03-29) — Allergy Diary
+
+**Allergy Diary**
+- Textarea "How do you feel today?" with emoji selector (happy, neutral, sneezy, sick)
+- Entries saved with date to localStorage (max 30 entries)
+- Shows last 7 diary entries below the input
+- Save button enabled only when both emoji and text are provided
+- Emoji buttons highlight on selection with accent border and scale animation
+
+### Technical
+- Service worker cache bumped to `pollenpal-v13.0`
+- Version label updated to v13
+
+---
+
 ## v12.0 (2026-03-29) — Quick-switch, Filters & Summary
 
 **Location Quick-Switch**
