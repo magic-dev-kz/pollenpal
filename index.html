@@ -237,7 +237,8 @@ background:rgba(255,255,255,0.2);transition:background .2s}
 .saved-loc-item{display:flex;align-items:center;gap:10px;padding:12px;
 border-radius:12px;cursor:pointer;transition:background .15s;border:1px solid var(--border);
 margin-bottom:8px;background:var(--bg-card)}
-.saved-loc-item:hover{background:var(--safe-light)}
+.saved-loc-item:hover,.saved-loc-item:focus-visible{background:var(--safe-light);outline:2px solid var(--accent);outline-offset:-2px}
+.max-loc-toast{color:#E53E3E;font-size:0.85rem;position:absolute;top:100%;left:50%;transform:translateX(-50%);white-space:nowrap;pointer-events:none;margin-top:4px}
 [data-theme="dark"] .saved-loc-item:hover{background:var(--border)}
 .saved-loc-item .loc-icon{width:32px;height:32px;border-radius:50%;background:var(--safe-light);
 display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -249,7 +250,7 @@ align-items:center;justify-content:center;color:var(--text-secondary);font-size:
 transition:background .15s,color .15s;flex-shrink:0}
 .saved-loc-item .loc-remove:hover{background:rgba(229,62,62,0.1);color:#E53E3E}
 .btn-fav{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;
-justify-content:center;font-size:1.1rem;transition:transform .2s,background .2s}
+justify-content:center;font-size:1.1rem;transition:transform .2s,background .2s;position:relative}
 .btn-fav:hover{background:var(--border);transform:scale(1.15)}
 .btn-fav.is-fav{color:#ECC94B}
 .saved-empty{text-align:center;padding:24px;color:var(--text-secondary);font-size:0.9rem}
@@ -422,7 +423,7 @@ function renderSavedLocations(){
   var html='<div class="saved-locations" style="padding-top:16px">'+
     '<div class="card-title"><span aria-hidden="true">\u2b50</span> Saved Locations</div>';
   locs.forEach(function(loc,i){
-    html+='<div class="saved-loc-item" data-idx="'+i+'" data-lat="'+loc.lat+'" data-lon="'+loc.lon+'" data-name="'+escapeHtml(loc.name)+'">'+
+    html+='<div class="saved-loc-item" tabindex="0" role="button" aria-label="Load '+escapeHtml(loc.name)+'" data-idx="'+i+'" data-lat="'+loc.lat+'" data-lon="'+loc.lon+'" data-name="'+escapeHtml(loc.name)+'">'+
       '<div class="loc-icon"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg></div>'+
       '<div class="loc-name">'+escapeHtml(loc.name)+'</div>'+
       '<button class="loc-remove" data-idx="'+i+'" aria-label="Remove '+escapeHtml(loc.name)+'" title="Remove">&times;</button></div>';
@@ -430,17 +431,27 @@ function renderSavedLocations(){
   html+='</div>';
   $('content-area').innerHTML=html;
 
-  // Bind click events
+  // Bind click and keyboard events
+  function handleLocItemActivate(el){
+    var lat=parseFloat(el.getAttribute('data-lat'));
+    var lon=parseFloat(el.getAttribute('data-lon'));
+    var name=el.getAttribute('data-name');
+    state.location={name:name,lat:lat,lon:lon};
+    LS.set('location',state.location);
+    updateFavButton();
+    loadData();
+  }
   document.querySelectorAll('.saved-loc-item').forEach(function(el){
     el.addEventListener('click',function(e){
       if(e.target.closest('.loc-remove')) return;
-      var lat=parseFloat(this.getAttribute('data-lat'));
-      var lon=parseFloat(this.getAttribute('data-lon'));
-      var name=this.getAttribute('data-name');
-      state.location={name:name,lat:lat,lon:lon};
-      LS.set('location',state.location);
-      updateFavButton();
-      loadData();
+      handleLocItemActivate(this);
+    });
+    el.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '){
+        e.preventDefault();
+        if(e.target.closest('.loc-remove')) return;
+        handleLocItemActivate(this);
+      }
     });
   });
   document.querySelectorAll('.loc-remove').forEach(function(btn){
@@ -1445,7 +1456,15 @@ $('btn-fav').addEventListener('click',function(){
     }
   } else {
     if(getSavedLocations().length>=MAX_SAVED_LOCATIONS){
-      alert('Maximum '+MAX_SAVED_LOCATIONS+' locations. Remove one first.');
+      var btn=$('btn-fav');
+      var existing=btn.querySelector('.max-loc-toast');
+      if(existing) existing.remove();
+      var toast=document.createElement('span');
+      toast.className='max-loc-toast';
+      toast.setAttribute('role','alert');
+      toast.textContent='Max '+MAX_SAVED_LOCATIONS+' locations. Remove one first.';
+      btn.appendChild(toast);
+      setTimeout(function(){if(toast.parentNode)toast.remove();},3000);
       return;
     }
     saveLocation(state.location);
