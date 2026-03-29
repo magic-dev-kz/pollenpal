@@ -1,5 +1,13 @@
 # Changelog
 
+## v10.0 (2026-03-29) — Visual Polish
+- Score number font larger (3.8rem to 4.5rem) for readability
+- Forecast card active (today) glow stronger for better visibility
+- Version label updated to v10
+- Service worker cache bumped to `pollenpal-v10.0`
+
+---
+
 ## v9.0 (2026-03-29) — Share on X & Allergy Type Icons
 
 ### Share on X
