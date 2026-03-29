@@ -544,6 +544,54 @@ transition-duration:0.01ms!important;scroll-behavior:auto!important}
 .onboarding-overlay{animation:none}
 .med-banner,.threshold-alert,.cal-day:hover{animation:none;transform:none}
 }
+
+/* Medication Log */
+.med-log-btn{display:flex;align-items:center;justify-content:center;gap:8px;
+width:100%;padding:14px;border-radius:14px;font-size:0.95rem;font-weight:700;
+margin-top:10px;transition:background .25s,color .25s,transform .2s,box-shadow .25s;
+backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.med-log-btn-active{background:linear-gradient(135deg,var(--accent),#2D9CDB);color:#fff;
+border:2px solid transparent;box-shadow:0 4px 16px rgba(56,161,105,0.25)}
+.med-log-btn-active:hover{transform:translateY(-2px) scale(1.01);
+box-shadow:0 6px 20px rgba(56,161,105,0.35)}
+.med-log-btn-active:active{transform:scale(0.95)}
+.med-log-btn-done{background:var(--glass-bg);color:var(--accent);
+border:2px solid var(--accent);cursor:default}
+.med-log-week{display:flex;gap:6px;margin-top:12px;justify-content:space-between}
+.med-log-day{text-align:center;flex:1;padding:6px 2px;border-radius:10px;
+background:var(--glass-bg);border:1px solid var(--glass-border);font-size:0.7rem;font-weight:700}
+.med-log-day-name{color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.03em;margin-bottom:4px}
+.med-log-day-status{font-size:1rem}
+.med-log-timestamp{font-size:0.72rem;color:var(--text-secondary);margin-top:8px;text-align:center}
+
+/* Activity Recommendation */
+.activity-rec{display:flex;align-items:center;gap:10px;padding:14px 16px;
+border-radius:14px;margin-top:10px;font-size:0.9rem;font-weight:600;
+background:var(--glass-bg);border:1px solid var(--glass-border);
+backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.activity-rec-icon{font-size:1.3rem;flex-shrink:0}
+.activity-rec-good{border-color:rgba(56,161,105,0.3);color:#38A169}
+[data-theme="dark"] .activity-rec-good{color:#68D391}
+.activity-rec-limit{border-color:rgba(183,121,31,0.3);color:#B7791F}
+[data-theme="dark"] .activity-rec-limit{color:#ECC94B}
+.activity-rec-stay{border-color:rgba(229,62,62,0.3);color:#E53E3E}
+[data-theme="dark"] .activity-rec-stay{color:#FC8181}
+
+/* Share Week Summary */
+.btn-share-week{display:flex;align-items:center;justify-content:center;gap:8px;
+width:100%;padding:14px;border:2px solid var(--text-secondary);border-radius:14px;
+font-size:0.95rem;font-weight:700;color:var(--text-secondary);margin-top:8px;
+transition:background .25s,color .25s,transform .2s,box-shadow .25s;
+backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.btn-share-week:hover{background:var(--text-secondary);color:var(--bg);
+transform:translateY(-2px) scale(1.01);box-shadow:0 4px 16px rgba(0,0,0,0.15);border-color:transparent}
+.btn-share-week:active{transform:scale(0.95)}
+.btn-share-week svg{width:18px;height:18px;fill:currentColor}
+.copied-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+background:var(--accent);color:#fff;padding:12px 24px;border-radius:12px;font-size:0.9rem;
+font-weight:700;box-shadow:0 4px 20px rgba(56,161,105,0.3);z-index:400;
+animation:slideUp .4s cubic-bezier(0.34,1.56,0.64,1) both}
+@keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 </style>
 <link rel="manifest" href="manifest.json">
 </head>
@@ -626,7 +674,8 @@ var state={
   lastFetch:LS.get('lastFetch')||0,
   medReminder:LS.get('medReminder')||false,
   medDismissedDate:LS.get('medDismissedDate')||null,
-  alertThreshold:LS.get('alertThreshold')!=null?LS.get('alertThreshold'):4
+  alertThreshold:LS.get('alertThreshold')!=null?LS.get('alertThreshold'):4,
+  medLog:LS.get('medLog')||{}
 };
 
 /* ============ Favorite Locations ============ */
@@ -793,6 +842,169 @@ function checkMedReminder(){
       LS.set('medDismissedDate',todayStr);
     });
   }
+}
+
+/* ============ Medication Log ============ */
+function getMedLog(){
+  return LS.get('medLog')||{};
+}
+
+function logMedTaken(){
+  var log=getMedLog();
+  var now=new Date();
+  var key=now.getFullYear()+'-'+(now.getMonth()+1)+'-'+now.getDate();
+  log[key]={taken:true,time:now.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})};
+  LS.set('medLog',log);
+  return log;
+}
+
+function isMedTakenToday(){
+  var log=getMedLog();
+  var now=new Date();
+  var key=now.getFullYear()+'-'+(now.getMonth()+1)+'-'+now.getDate();
+  return log[key]&&log[key].taken;
+}
+
+function getMedTodayTime(){
+  var log=getMedLog();
+  var now=new Date();
+  var key=now.getFullYear()+'-'+(now.getMonth()+1)+'-'+now.getDate();
+  return log[key]?log[key].time:null;
+}
+
+function renderMedLog(){
+  var log=getMedLog();
+  var today=new Date();
+  var takenToday=isMedTakenToday();
+  var todayTime=getMedTodayTime();
+  var dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  var html='<div class="card animate-in delay-4" aria-label="Medication log">';
+  html+='<div class="card-title"><span aria-hidden="true">\uD83D\uDCCA</span> Medication Log</div>';
+
+  // "Took my meds" button
+  if(takenToday){
+    html+='<button class="med-log-btn med-log-btn-done" id="btn-med-log" disabled aria-label="Already logged medication today">\u2705 Took my meds</button>';
+    if(todayTime) html+='<div class="med-log-timestamp">Logged at '+escapeHtml(todayTime)+'</div>';
+  } else {
+    html+='<button class="med-log-btn med-log-btn-active" id="btn-med-log" aria-label="Log that you took your medication">\uD83D\uDC8A Took my meds</button>';
+  }
+
+  // Weekly view
+  html+='<div class="med-log-week">';
+  // Show current week (Mon-Sun)
+  var startOfWeek=new Date(today);
+  var dow=today.getDay();
+  var mondayOffset=dow===0?-6:1-dow;
+  startOfWeek.setDate(today.getDate()+mondayOffset);
+
+  for(var i=0;i<7;i++){
+    var d=new Date(startOfWeek);
+    d.setDate(startOfWeek.getDate()+i);
+    var key=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+    var isFuture=d>today;
+    var isToday=d.toDateString()===today.toDateString();
+    var taken=log[key]&&log[key].taken;
+    var status=isFuture?'\u2015':(taken?'\u2705':'\u274C');
+    html+='<div class="med-log-day'+(isToday?' cal-today':'')+'" aria-label="'+dayNames[d.getDay()]+(taken?' taken':' missed')+'">'+
+      '<div class="med-log-day-name">'+dayNames[d.getDay()]+'</div>'+
+      '<div class="med-log-day-status">'+status+'</div></div>';
+  }
+  html+='</div></div>';
+  return html;
+}
+
+function bindMedLog(){
+  var btn=document.getElementById('btn-med-log');
+  if(!btn||btn.disabled) return;
+  btn.addEventListener('click',function(){
+    logMedTaken();
+    // Re-render just the med log card
+    var card=btn.closest('.card');
+    if(card){
+      var temp=document.createElement('div');
+      temp.innerHTML=renderMedLog();
+      card.parentNode.replaceChild(temp.firstChild,card);
+      bindMedLog();
+    }
+  });
+}
+
+/* ============ Activity Recommendation ============ */
+function renderActivityRec(score){
+  var icon,text,cssClass;
+  if(score>=7){
+    icon='\uD83C\uDFDE\uFE0F';
+    text='Good for outdoor activities';
+    cssClass='activity-rec-good';
+  } else if(score>=4){
+    icon='\u26A0\uFE0F';
+    text='Limit outdoor time';
+    cssClass='activity-rec-limit';
+  } else {
+    icon='\uD83C\uDFE0';
+    text='Stay inside';
+    cssClass='activity-rec-stay';
+  }
+  return '<div class="activity-rec '+cssClass+'" aria-label="Activity recommendation">'+
+    '<span class="activity-rec-icon" aria-hidden="true">'+icon+'</span>'+
+    '<span>'+escapeHtml(text)+'</span></div>';
+}
+
+/* ============ Share Week Summary ============ */
+function shareWeekSummary(){
+  if(!state.pollenData||!state.location) return;
+  var today=new Date();
+  var dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var lines=[];
+  lines.push('\uD83C\uDF3B PollenPal \u2014 7-Day Forecast');
+  lines.push('\uD83D\uDCCD '+(state.location.name||'Unknown'));
+  lines.push('');
+  for(var d=0;d<7;d++){
+    var date=new Date(today);
+    date.setDate(today.getDate()+d);
+    var avg=getDayAverage(state.pollenData,d);
+    var s=calcScore(avg);
+    var lvl=getScoreLevel(s);
+    var dayLabel=d===0?'Today':d===1?'Tomorrow':dayNames[date.getDay()];
+    var dateStr=(date.getMonth()+1)+'/'+date.getDate();
+    var emoji=s>=7?'\uD83D\uDFE2':s>=4?'\uD83D\uDFE1':'\uD83D\uDD34';
+    lines.push(emoji+' '+dayLabel+' ('+dateStr+'): '+s.toFixed(1)+'/10 \u2014 '+lvl.label);
+  }
+  lines.push('');
+  lines.push('Checked with PollenPal \uD83C\uDF3B');
+  var text=lines.join('\n');
+
+  if(navigator.share){
+    navigator.share({title:'PollenPal Week Summary',text:text}).catch(function(){});
+  } else if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){
+      showCopiedToast();
+    }).catch(function(){
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text){
+  var ta=document.createElement('textarea');
+  ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');showCopiedToast()}catch(e){}
+  document.body.removeChild(ta);
+}
+
+function showCopiedToast(){
+  var existing=document.querySelector('.copied-toast');
+  if(existing) existing.remove();
+  var toast=document.createElement('div');
+  toast.className='copied-toast';
+  toast.setAttribute('role','alert');
+  toast.textContent='\u2705 Week summary copied to clipboard!';
+  document.body.appendChild(toast);
+  setTimeout(function(){if(toast.parentNode)toast.remove()},2500);
 }
 
 /* ============ Pollen Calendar (7-day) ============ */
@@ -1373,7 +1585,10 @@ function renderDashboard(pollenData,weatherData){
       '<div class="forecast-score" style="color:'+f.level.color+'">'+f.score.toFixed(1)+'</div>'+
       '<div class="forecast-label">'+escapeHtml(f.level.label)+'</div></div>';
   });
-  html+='</div></div>';
+  html+='</div>';
+  // Activity Recommendation (based on today's score)
+  html+=renderActivityRec(score);
+  html+='</div>';
 
   // Weather factors
   html+='<div class="card animate-in delay-4" aria-label="Weather factors">'+
@@ -1402,6 +1617,9 @@ function renderDashboard(pollenData,weatherData){
   // Pollen Calendar (7-day)
   html+=renderPollenCalendar(pollenData);
 
+  // Medication Log
+  html+=renderMedLog();
+
   // Medication Reminder toggle
   html+='<div class="card animate-in delay-4" aria-label="Medication reminder">'+
     '<div class="card-title"><span aria-hidden="true">\ud83d\udc8a</span> Medication Reminder</div>'+
@@ -1420,16 +1638,28 @@ function renderDashboard(pollenData,weatherData){
     '<svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>'+
     'Share Safety Score</button>';
 
+  // Share Week Summary button
+  html+='<button class="btn-share-week animate-in delay-5" id="btn-share-week" aria-label="Share 7-day forecast summary">'+
+    '<svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>'+
+    'Copy Week Summary</button>';
+
   // Update time
   html+='<div style="text-align:center;padding:16px;font-size:0.75rem;color:var(--text-secondary)">'+
     'Updated '+new Date().toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})+
-    ' \u2022 Data from Open-Meteo \u2022 v4</div>';
+    ' \u2022 Data from Open-Meteo \u2022 v5</div>';
 
   $('content-area').innerHTML=html;
 
   // Bind share button
   var shareBtn=$('btn-share-score');
   if(shareBtn) shareBtn.addEventListener('click',shareScore);
+
+  // Bind share week summary
+  var shareWeekBtn=$('btn-share-week');
+  if(shareWeekBtn) shareWeekBtn.addEventListener('click',shareWeekSummary);
+
+  // Bind medication log
+  bindMedLog();
 
   // Bind medication toggle
   var medToggle=$('med-toggle');

@@ -1,7 +1,7 @@
 {
   "name": "PollenPal - Allergy Forecast",
   "short_name": "PollenPal",
-  "version": "4.0",
+  "version": "5.0",
   "description": "Morning pollen forecast with actionable advice for allergy families.",
   "start_url": "./index.html",
   "scope": ".",
