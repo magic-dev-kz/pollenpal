@@ -1,5 +1,18 @@
 # Changelog
 
+## v14.0 (2026-03-29) — Indoor Activity Suggestions
+
+**Indoor Activity Suggestions**
+- When safety score is below 4 (high pollen), shows "Indoor activity ideas" card with pill-style suggestions: Yoga, Reading, Cooking, Board games, Indoor plants, Meditation, Puzzle, Journaling
+- Card appears below the safety alert with accent background
+- Automatically hidden when score is 4 or above
+
+### Technical
+- Service worker cache bumped to `pollenpal-v14.0`
+- Version label updated to v14
+
+---
+
 ## v13.0 (2026-03-29) — Allergy Diary
 
 **Allergy Diary**

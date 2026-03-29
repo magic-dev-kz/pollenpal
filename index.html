@@ -921,6 +921,25 @@ function renderSafetyAlert(score){
       container.innerHTML='';
     });
   }
+  // v14: Indoor activity suggestions for high pollen
+  renderIndoorSuggestions(score);
+}
+
+function renderIndoorSuggestions(score){
+  var existing=document.getElementById('indoor-suggestions');
+  if(existing) existing.remove();
+  if(score>=4) return;
+  var container=$('safety-alert');
+  if(!container) return;
+  var div=document.createElement('div');
+  div.id='indoor-suggestions';
+  div.style.cssText='margin-top:12px;padding:14px 16px;border-radius:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.15);';
+  div.innerHTML='<div style="font-weight:700;font-size:0.95rem;margin-bottom:6px;color:var(--text-primary);">\uD83C\uDFE0 Indoor activity ideas</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:8px;">'+
+    ['Yoga','Reading','Cooking','Board games','Indoor plants','Meditation','Puzzle','Journaling'].map(function(a){
+      return '<span style="background:var(--surface,rgba(255,255,255,0.06));padding:5px 12px;border-radius:20px;font-size:0.85rem;color:var(--text-secondary);">'+a+'</span>';
+    }).join('')+'</div>';
+  container.appendChild(div);
 }
 
 /* ============ Medication Reminder ============ */
