@@ -617,6 +617,39 @@ a:focus-visible,.btn-primary:focus-visible,.btn-secondary:focus-visible,
 .allergy-option:focus-visible,.ob-search:focus-visible,.search-input:focus-visible,
 .threshold-slider:focus-visible,.alert-close:focus-visible,.med-dismiss:focus-visible,
 input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* v7: PWA Install Banner */
+.pwa-install-banner{position:fixed;bottom:0;left:0;right:0;z-index:250;
+background:var(--glass-bg);backdrop-filter:blur(20px) saturate(180%);
+-webkit-backdrop-filter:blur(20px) saturate(180%);
+border-top:1px solid var(--glass-border);
+box-shadow:0 -4px 24px rgba(0,0,0,0.1);
+padding:14px 16px;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));
+display:flex;align-items:center;gap:12px;
+transform:translateY(100%);transition:transform .35s cubic-bezier(0.4,0,0.2,1)}
+.pwa-install-banner.show{transform:translateY(0)}
+.pwa-install-banner__icon{width:40px;height:40px;border-radius:10px;
+background:linear-gradient(135deg,var(--accent),#2D9CDB);
+display:flex;align-items:center;justify-content:center;flex-shrink:0;
+box-shadow:0 2px 10px rgba(56,161,105,0.25)}
+.pwa-install-banner__icon svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round}
+.pwa-install-banner__text{flex:1;min-width:0}
+.pwa-install-banner__title{font-size:0.9rem;font-weight:700}
+.pwa-install-banner__sub{font-size:0.75rem;color:var(--text-secondary)}
+.pwa-install-banner__btn{height:34px;padding:0 16px;border-radius:17px;
+background:linear-gradient(135deg,var(--accent),#2D9CDB);color:#fff;
+font-size:0.82rem;font-weight:700;flex-shrink:0;
+transition:transform .2s,box-shadow .2s;
+box-shadow:0 2px 10px rgba(56,161,105,0.3)}
+.pwa-install-banner__btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(56,161,105,0.4)}
+.pwa-install-banner__close{width:28px;height:28px;border-radius:50%;
+display:flex;align-items:center;justify-content:center;flex-shrink:0;
+color:var(--text-secondary);font-size:1rem;transition:background .2s,color .2s}
+.pwa-install-banner__close:hover{background:rgba(0,0,0,0.05);color:var(--text)}
+[data-theme="dark"] .pwa-install-banner__close:hover{background:rgba(255,255,255,0.08)}
+
+/* v7: Updated timestamp */
+.updated-ago{font-size:0.78rem;color:var(--text-secondary);font-weight:500;margin-top:2px}
+
 .oc-footer{text-align:center;padding:20px 16px 24px;margin-top:24px}
 .oc-footer a{font-size:.78rem;color:var(--text-muted,var(--text-secondary,#888));text-decoration:none;opacity:.6;transition:opacity .2s}
 .oc-footer a:hover{opacity:1}
@@ -1578,7 +1611,8 @@ function renderDashboard(pollenData,weatherData){
     '<div class="score-number count-up" style="color:'+level.color+'" data-target-score="'+score.toFixed(1)+'">'+
     '0<span class="decimal">.0</span></div></div>'+
     '<div class="score-label" style="color:'+level.color+'">'+escapeHtml(level.label)+'</div>'+
-    '<div class="score-sublabel">'+escapeHtml(level.sublabel)+'</div></section>';
+    '<div class="score-sublabel">'+escapeHtml(level.sublabel)+'</div>'+
+    '<div class="updated-ago" id="updated-ago" data-ts="'+Date.now()+'">Updated just now</div></section>';
 
   // Personal warnings
   if(relevantWarnings.length>0){
@@ -1683,7 +1717,7 @@ function renderDashboard(pollenData,weatherData){
   // Update time
   html+='<div style="text-align:center;padding:16px;font-size:0.75rem;color:var(--text-secondary)">'+
     'Updated '+new Date().toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})+
-    ' \u2022 Data from Open-Meteo \u2022 v6</div>';
+    ' \u2022 Data from Open-Meteo \u2022 v7</div>';
 
   $('content-area').innerHTML=html;
 
@@ -2217,12 +2251,138 @@ if(!state.onboarded){
   }
 }
 
+/* ============ v7: Updated Ago Ticker ============ */
+var updatedAgoTimer=null;
+
+function startUpdatedAgoTicker(){
+  if(updatedAgoTimer) clearInterval(updatedAgoTimer);
+  updatedAgoTimer=setInterval(function(){
+    var el=document.getElementById('updated-ago');
+    if(!el) return;
+    var ts=parseInt(el.getAttribute('data-ts'));
+    if(!ts) return;
+    var diff=Math.floor((Date.now()-ts)/1000);
+    var text;
+    if(diff<60) text='Updated just now';
+    else if(diff<3600){
+      var mins=Math.floor(diff/60);
+      text='Updated '+mins+' min'+(mins>1?'s':'')+' ago';
+    } else {
+      var hrs=Math.floor(diff/3600);
+      text='Updated '+hrs+' hour'+(hrs>1?'s':'')+' ago';
+    }
+    el.textContent=text;
+  },30000); // update every 30s
+}
+
+/* ============ v7: Auto-Refresh (30 min) ============ */
+var autoRefreshTimer=null;
+var AUTO_REFRESH_MS=30*60*1000; // 30 minutes
+
+function startAutoRefresh(){
+  if(autoRefreshTimer) clearInterval(autoRefreshTimer);
+  autoRefreshTimer=setInterval(function(){
+    if(document.hidden) return; // skip if tab not visible
+    if(!state.location) return;
+    // Clear cache so we get fresh data
+    var lat=state.location.lat.toFixed(2);
+    var lon=state.location.lon.toFixed(2);
+    LS.remove('pollen_'+lat+'_'+lon);
+    LS.remove('weather_'+lat+'_'+lon);
+    loadData();
+  },AUTO_REFRESH_MS);
+}
+
+// Also refresh when tab becomes visible after being hidden for 30+ min
+document.addEventListener('visibilitychange',function(){
+  if(!document.hidden && state.location && state.lastFetch){
+    if(Date.now()-state.lastFetch>AUTO_REFRESH_MS){
+      var lat=state.location.lat.toFixed(2);
+      var lon=state.location.lon.toFixed(2);
+      LS.remove('pollen_'+lat+'_'+lon);
+      LS.remove('weather_'+lat+'_'+lon);
+      loadData();
+    }
+  }
+});
+
+/* ============ v7: PWA Install Banner ============ */
+var deferredInstallPrompt=null;
+
+function initPWAInstallBanner(){
+  var visits=1;
+  try{
+    visits=parseInt(localStorage.getItem('pp_visits')||'0')+1;
+    localStorage.setItem('pp_visits',String(visits));
+  }catch(e){}
+
+  try{if(localStorage.getItem('pp_pwa_dismissed')) return}catch(e){}
+  if(visits<2) return;
+  if(window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone) return;
+
+  window.addEventListener('beforeinstallprompt',function(e){
+    e.preventDefault();
+    deferredInstallPrompt=e;
+    showInstallBanner();
+  });
+}
+
+function showInstallBanner(){
+  var banner=document.createElement('div');
+  banner.className='pwa-install-banner';
+  banner.id='pwa-install-banner';
+  banner.setAttribute('role','alert');
+  banner.innerHTML=
+    '<div class="pwa-install-banner__icon">'+
+      '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>'+
+    '</div>'+
+    '<div class="pwa-install-banner__text">'+
+      '<div class="pwa-install-banner__title">Install PollenPal</div>'+
+      '<div class="pwa-install-banner__sub">Quick access from your Home Screen</div>'+
+    '</div>'+
+    '<button class="pwa-install-banner__btn" id="pwa-install-btn">Install</button>'+
+    '<button class="pwa-install-banner__close" id="pwa-install-close" aria-label="Dismiss">&times;</button>';
+  document.body.appendChild(banner);
+
+  requestAnimationFrame(function(){requestAnimationFrame(function(){
+    banner.classList.add('show');
+  })});
+
+  document.getElementById('pwa-install-btn').addEventListener('click',function(){
+    if(deferredInstallPrompt){
+      deferredInstallPrompt.prompt();
+      deferredInstallPrompt.userChoice.then(function(){
+        deferredInstallPrompt=null;
+        dismissInstallBanner();
+      });
+    }
+  });
+
+  document.getElementById('pwa-install-close').addEventListener('click',function(){
+    dismissInstallBanner();
+    try{localStorage.setItem('pp_pwa_dismissed','1')}catch(e){}
+  });
+}
+
+function dismissInstallBanner(){
+  var banner=document.getElementById('pwa-install-banner');
+  if(banner){
+    banner.classList.remove('show');
+    setTimeout(function(){if(banner.parentNode)banner.remove()},400);
+  }
+}
+
 /* ============ Service Worker ============ */
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(function(e){
     console.warn('SW registration failed:',e);
   });
 }
+
+/* ============ v7: Start Timers ============ */
+initPWAInstallBanner();
+startAutoRefresh();
+startUpdatedAgoTicker();
 
 })();
 </script>

@@ -1,5 +1,29 @@
 # Changelog
 
+## v7.0 (2026-03-30) — PWA Install, Auto-Refresh & Timestamp
+
+**PWA Install Prompt**
+- Shows an install banner after 2+ visits to the app
+- Uses the `beforeinstallprompt` event for native install flow
+- Dismissible with close button; dismiss state persisted in localStorage
+- Does not show if app is already installed (standalone mode detected)
+
+**Auto-Refresh**
+- Pollen and weather data automatically refresh every 30 minutes while the app is open
+- On tab return after 30+ minutes of being hidden, data refreshes immediately
+- Clears API cache before refresh to ensure fresh data
+
+**Last Updated Timestamp**
+- "Updated just now" / "Updated X min ago" / "Updated X hours ago" displayed under the safety score
+- Updates every 30 seconds without re-fetching data
+- Timestamp resets on each data load
+
+### Technical
+- Service worker cache bumped to `pollenpal-v7.0`
+- Version label updated to v7
+
+---
+
 ## v6.0 (2026-03-29) — Micro-interactions & Polish
 - **Score countUp**: Safety score animates from 0 to target value over 1 second with eased cubic interpolation on each data load
 - **Forecast card stagger**: 3 forecast cards appear with staggered delay (100ms/200ms/300ms) using opacity+transform transition
