@@ -1,5 +1,20 @@
 # Changelog
 
+## v9.0 (2026-03-29) — Share on X & Allergy Type Icons
+
+### Share on X
+- "Share on X" button on the results screen.
+- Pre-filled tweet: "Safety score today: X/10. Free pollen forecast: [URL]".
+
+### Allergy Type Icons
+- Emoji icons already displayed next to each pollen type name (confirmed existing).
+
+### Technical
+- Service worker cache bumped to `pollenpal-v9.0`.
+- Version label updated to v9.
+
+---
+
 ## v8.0 (2026-03-29) — Activity Planner, Trend Chart & Season Alert
 
 **Outdoor Activity Planner**
