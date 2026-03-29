@@ -1,5 +1,12 @@
 # Changelog
 
+## v11.0 (2026-03-29) — Micro-polish
+- Onboarding allergy option buttons larger (18px padding, min-height 56px) for easier mobile tapping
+- Score ring glow intensity now scales with score value via `--ring-glow-intensity`
+- Service worker cache bumped to `pollenpal-v11.0`
+
+---
+
 ## v10.0 (2026-03-29) — Visual Polish
 - Score number font larger (3.8rem to 4.5rem) for readability
 - Forecast card active (today) glow stronger for better visibility
