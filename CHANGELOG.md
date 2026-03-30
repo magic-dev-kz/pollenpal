@@ -1,5 +1,12 @@
 # Changelog
 
+
+## v23.0 (2026-03-29) — Deferred Font Loading
+
+- **Non-blocking Google Fonts**: Font CSS changed from render-blocking `<link rel="stylesheet">` to `<link rel="preload" ... onload>` with `<noscript>` fallback — improves First Contentful Paint
+- SW cache bumped to `pollenpal-v23.0`
+
+---
 ## v22.0 (2026-03-29) — Data Portability
 
 - **Export allergy profile + symptom log as JSON**: "Export All Data" button in Settings overlay downloads allergy profile, saved locations, symptom log, medication log/reminder, and alert threshold as a portable JSON backup file
