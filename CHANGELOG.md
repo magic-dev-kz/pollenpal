@@ -1,5 +1,14 @@
 # Changelog
 
+## v21.0 (2026-03-29) — Symptom Tracker
+
+- **Symptom Log**: New "How Are You Feeling?" card on dashboard with 5 symptom buttons (Sneezing, Itchy Eyes, Headache, Congestion, Breathing), severity toggle (Mild/Moderate/Severe) for each, and "Log Symptoms" action saving to localStorage with timestamp
+- **Symptom History**: Shows last 7 days of logged symptoms with severity tags
+- **Pollen-Symptom Correlation**: Insight card comparing symptom days with high pollen days (requires 5+ entries) — e.g. "Your symptoms tend to be worse on high grass pollen days"
+- **Weekly Symptom Summary**: "This week: X sneezing days, Y headache days" with trend vs previous week (up/down/same)
+- **Bugfix**: Fixed `store.get`/`store.set` -> `LS.get`/`LS.set` in forecast accuracy feature (was broken since v16)
+- SW cache bumped to `pollenpal-v21.0`
+
 ## v20.0 (2026-03-29) — Print Styles Improved
 
 - **Print stylesheet enhanced**: Full `@media print` rules — hides buttons, overlays, allergy banner; shows safety score + forecast cards; white bg, black text; risk meter colors preserved; page breaks on cards

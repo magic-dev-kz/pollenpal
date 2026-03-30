@@ -714,6 +714,52 @@ color:var(--text-secondary);font-size:1rem;transition:background .2s,color .2s}
 .oc-footer a:hover{opacity:1}
 .skip-link{position:absolute;top:-60px;left:8px;background:var(--accent);color:#fff;padding:8px 16px;border-radius:8px;z-index:10000;font-weight:600;text-decoration:none;transition:top .15s}
 .skip-link:focus{top:8px}
+
+/* v21: Symptom Tracker */
+.symptom-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.symptom-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:12px;
+font-size:0.85rem;font-weight:600;border:2px solid var(--glass-border);
+background:var(--glass-bg);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+transition:all .25s cubic-bezier(0.34,1.56,0.64,1);cursor:pointer}
+.symptom-btn:hover{border-color:var(--accent-light);transform:translateY(-1px);box-shadow:var(--glow-sky)}
+.symptom-btn.symptom-active{border-color:var(--accent);
+background:linear-gradient(135deg,rgba(56,161,105,0.12),rgba(104,211,145,0.15));
+box-shadow:0 2px 10px rgba(56,161,105,0.15)}
+[data-theme="dark"] .symptom-btn.symptom-active{background:rgba(56,161,105,0.18)}
+.symptom-btn .symptom-emoji{font-size:1.1rem}
+.severity-toggle{display:flex;gap:4px;margin-top:6px}
+.severity-opt{padding:4px 10px;border-radius:8px;font-size:0.72rem;font-weight:700;
+border:1.5px solid var(--glass-border);background:var(--glass-bg);cursor:pointer;
+transition:all .2s;text-transform:uppercase;letter-spacing:0.03em}
+.severity-opt:hover{border-color:var(--accent-light)}
+.severity-opt.severity-selected{border-color:var(--accent);color:var(--accent);
+background:rgba(56,161,105,0.08)}
+.symptom-log-btn{display:flex;align-items:center;justify-content:center;gap:8px;
+width:100%;padding:12px;border-radius:14px;font-size:0.9rem;font-weight:700;
+background:linear-gradient(135deg,var(--accent),#2D9CDB);color:#fff;
+transition:transform .2s,box-shadow .2s;cursor:pointer;border:none;
+box-shadow:0 3px 12px rgba(56,161,105,0.2)}
+.symptom-log-btn:hover{transform:translateY(-2px);box-shadow:0 5px 18px rgba(56,161,105,0.3)}
+.symptom-log-btn:active{transform:scale(0.95)}
+.symptom-log-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none}
+.symptom-history-item{display:flex;align-items:center;gap:10px;padding:10px 0;
+border-bottom:1px solid rgba(0,0,0,0.04);font-size:0.85rem}
+[data-theme="dark"] .symptom-history-item{border-bottom-color:rgba(255,255,255,0.06)}
+.symptom-history-date{font-size:0.75rem;color:var(--text-secondary);font-weight:600;min-width:52px}
+.symptom-history-tags{display:flex;flex-wrap:wrap;gap:4px;flex:1}
+.symptom-history-tag{padding:2px 8px;border-radius:8px;font-size:0.72rem;font-weight:600;
+background:var(--glass-bg);border:1px solid var(--glass-border)}
+.symptom-history-tag.severity-1{color:#38A169;border-color:rgba(56,161,105,0.3)}
+.symptom-history-tag.severity-2{color:#B7791F;border-color:rgba(183,121,31,0.3)}
+.symptom-history-tag.severity-3{color:#E53E3E;border-color:rgba(229,62,62,0.3)}
+.symptom-insight{padding:12px 14px;border-radius:12px;font-size:0.85rem;font-weight:600;
+margin-top:10px;display:flex;align-items:center;gap:8px;
+background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(56,161,105,0.06));
+border:1px solid rgba(99,102,241,0.15);color:var(--text)}
+[data-theme="dark"] .symptom-insight{background:rgba(99,102,241,0.12);border-color:rgba(99,102,241,0.2)}
+.symptom-week-summary{padding:12px 14px;border-radius:12px;font-size:0.85rem;font-weight:600;
+margin-top:8px;background:var(--glass-bg);border:1px solid var(--glass-border)}
+.symptom-week-summary .week-trend{font-size:0.78rem;color:var(--text-secondary);margin-top:4px}
 </style>
 <link rel="manifest" href="manifest.json">
 </head>
@@ -1846,10 +1892,10 @@ function renderDashboard(pollenData,weatherData){
   // v16: Forecast accuracy — compare yesterday's prediction with actual
   (function(){
     var today=new Date().toISOString().slice(0,10);
-    var yesterdayPred=store.get('forecast_pred');
+    var yesterdayPred=LS.get('forecast_pred');
     // Save today's forecast (for tomorrow's tomorrow score = forecasts[1] if available)
     if(forecasts.length>=2){
-      store.set('forecast_pred',{date:today,predictedScore:forecasts[1].score});
+      LS.set('forecast_pred',{date:today,predictedScore:forecasts[1].score});
     }
     // Show accuracy if we have yesterday's prediction
     if(yesterdayPred && yesterdayPred.date){
@@ -1957,6 +2003,9 @@ function renderDashboard(pollenData,weatherData){
   // Medication Log
   html+=renderMedLog();
 
+  // v21: Symptom Tracker
+  html+=renderSymptomTracker(pollenData);
+
   // Medication Reminder toggle
   html+='<div class="card animate-in delay-4" aria-label="Medication reminder">'+
     '<div class="card-title"><span aria-hidden="true">\ud83d\udc8a</span> Medication Reminder</div>'+
@@ -1987,7 +2036,7 @@ function renderDashboard(pollenData,weatherData){
   // Update time
   html+='<div style="text-align:center;padding:16px;font-size:0.75rem;color:var(--text-secondary)">'+
     'Updated '+new Date().toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})+
-    ' \u2022 Data from Open-Meteo \u2022 v15</div>';
+    ' \u2022 Data from Open-Meteo \u2022 v21</div>';
 
   // v13: Allergy Diary
   html+=renderAllergyDiary();
@@ -2039,6 +2088,9 @@ function renderDashboard(pollenData,weatherData){
 
   // Bind medication log
   bindMedLog();
+
+  // v21: Bind symptom tracker
+  initSymptomTracker();
 
   // Bind medication toggle
   var medToggle=$('med-toggle');
@@ -2787,6 +2839,255 @@ renderDashboard=function(pollenData,weatherData){
     });
   }
 };
+
+/* ============ v21: Symptom Tracker ============ */
+var SYMPTOMS=[
+  {key:'sneezing',emoji:'\uD83E\uDD27',label:'Sneezing'},
+  {key:'itchy_eyes',emoji:'\uD83D\uDC40',label:'Itchy Eyes'},
+  {key:'headache',emoji:'\uD83E\uDD12',label:'Headache'},
+  {key:'congestion',emoji:'\uD83D\uDE37',label:'Congestion'},
+  {key:'breathing',emoji:'\uD83D\uDE2E\u200D\uD83D\uDCA8',label:'Breathing'}
+];
+var SEVERITY_LABELS=['Mild','Moderate','Severe'];
+
+function getSymptomLog(){
+  return LS.get('symptomLog')||[];
+}
+
+function saveSymptomEntry(symptoms){
+  var log=getSymptomLog();
+  var now=new Date();
+  var dateStr=now.getFullYear()+'-'+(now.getMonth()+1<10?'0':'')+(now.getMonth()+1)+'-'+(now.getDate()<10?'0':'')+now.getDate();
+  log.unshift({date:dateStr,symptoms:symptoms,ts:Date.now()});
+  if(log.length>60) log=log.slice(0,60);
+  LS.set('symptomLog',log);
+  return log;
+}
+
+function getSymptomEntriesLast7Days(){
+  var log=getSymptomLog();
+  var now=Date.now();
+  var sevenDaysMs=7*24*60*60*1000;
+  return log.filter(function(e){return now-e.ts<sevenDaysMs});
+}
+
+function getSymptomEntriesPrevWeek(){
+  var log=getSymptomLog();
+  var now=Date.now();
+  var sevenDaysMs=7*24*60*60*1000;
+  return log.filter(function(e){return now-e.ts>=sevenDaysMs && now-e.ts<sevenDaysMs*2});
+}
+
+function renderSymptomCorrelation(pollenData){
+  var entries=getSymptomLog();
+  if(entries.length<5) return '';
+  // Group entries by date and find which pollen types were high on symptom days
+  var symptomDates={};
+  entries.forEach(function(e){symptomDates[e.date]=e.symptoms});
+  // Check pollen data for each day — compare with weekly averages
+  var highGrassDays=0;var symptomOnHighGrass=0;
+  var highBirchDays=0;var symptomOnHighBirch=0;
+  var highRagweedDays=0;var symptomOnHighRagweed=0;
+  if(pollenData&&pollenData.hourly){
+    for(var d=0;d<7;d++){
+      var avg=getDayAverage(pollenData,d);
+      var date=new Date();date.setDate(date.getDate()+d-6);
+      var dateStr=date.getFullYear()+'-'+(date.getMonth()+1<10?'0':'')+(date.getMonth()+1)+'-'+(date.getDate()<10?'0':'')+date.getDate();
+      var hasSymptoms=!!symptomDates[dateStr];
+      if(avg.grass_pollen>100){highGrassDays++;if(hasSymptoms)symptomOnHighGrass++}
+      if(avg.birch_pollen>60){highBirchDays++;if(hasSymptoms)symptomOnHighBirch++}
+      if(avg.ragweed_pollen>40){highRagweedDays++;if(hasSymptoms)symptomOnHighRagweed++}
+    }
+  }
+  var insights=[];
+  if(highGrassDays>=2&&symptomOnHighGrass>=2) insights.push('Your symptoms tend to be worse on high grass pollen days');
+  if(highBirchDays>=2&&symptomOnHighBirch>=2) insights.push('Birch pollen seems to trigger your symptoms');
+  if(highRagweedDays>=2&&symptomOnHighRagweed>=2) insights.push('Ragweed pollen correlates with your symptoms');
+  if(insights.length===0){
+    // General insight based on symptom count
+    var recentEntries=getSymptomEntriesLast7Days();
+    if(recentEntries.length>=3){
+      var commonSymptom={};
+      recentEntries.forEach(function(e){
+        e.symptoms.forEach(function(s){
+          commonSymptom[s.key]=(commonSymptom[s.key]||0)+1;
+        });
+      });
+      var topKey='';var topCount=0;
+      for(var k in commonSymptom){if(commonSymptom[k]>topCount){topCount=commonSymptom[k];topKey=k}}
+      if(topKey){
+        var topSymptom=SYMPTOMS.find(function(s){return s.key===topKey});
+        if(topSymptom) insights.push(topSymptom.emoji+' '+topSymptom.label+' is your most common symptom this week ('+topCount+' days)');
+      }
+    }
+  }
+  if(insights.length===0) return '';
+  return '<div class="symptom-insight" aria-label="Symptom insight">'+
+    '<span aria-hidden="true">\uD83D\uDCA1</span><span>'+escapeHtml(insights[0])+'</span></div>';
+}
+
+function renderWeeklySymptomSummary(){
+  var thisWeek=getSymptomEntriesLast7Days();
+  var prevWeek=getSymptomEntriesPrevWeek();
+  if(thisWeek.length===0) return '';
+  // Count symptom days
+  var counts={};
+  thisWeek.forEach(function(e){
+    e.symptoms.forEach(function(s){
+      counts[s.key]=(counts[s.key]||0)+1;
+    });
+  });
+  var prevCounts={};
+  prevWeek.forEach(function(e){
+    e.symptoms.forEach(function(s){
+      prevCounts[s.key]=(prevCounts[s.key]||0)+1;
+    });
+  });
+  var parts=[];
+  SYMPTOMS.forEach(function(s){
+    if(counts[s.key]){
+      parts.push(counts[s.key]+' '+s.label.toLowerCase()+' day'+(counts[s.key]>1?'s':''));
+    }
+  });
+  if(parts.length===0) return '';
+  var html='<div class="symptom-week-summary" aria-label="Weekly symptom summary">'+
+    '<div>\uD83D\uDCCA This week: '+escapeHtml(parts.join(', '))+'</div>';
+  // Trend vs last week
+  if(prevWeek.length>0){
+    var totalThis=thisWeek.length;
+    var totalPrev=prevWeek.length;
+    var diff=totalThis-totalPrev;
+    var trendText='';
+    if(diff>0) trendText='\u2B06\uFE0F '+diff+' more symptom day'+(diff>1?'s':'')+' than last week';
+    else if(diff<0) trendText='\u2B07\uFE0F '+Math.abs(diff)+' fewer symptom day'+(Math.abs(diff)>1?'s':'')+' than last week';
+    else trendText='\u27A1\uFE0F Same as last week';
+    html+='<div class="week-trend">'+trendText+'</div>';
+  }
+  html+='</div>';
+  return html;
+}
+
+function renderSymptomTracker(pollenData){
+  var html='<div class="card animate-in delay-3" aria-label="Symptom tracker" id="symptom-tracker-card">';
+  html+='<div class="card-title"><span aria-hidden="true">\uD83E\uDE7A</span> How Are You Feeling?</div>';
+  // Symptom buttons
+  html+='<div class="symptom-grid" id="symptom-grid">';
+  SYMPTOMS.forEach(function(s){
+    html+='<button class="symptom-btn" data-key="'+s.key+'" aria-pressed="false" aria-label="'+escapeHtml(s.label)+'">'+
+      '<span class="symptom-emoji">'+s.emoji+'</span><span>'+escapeHtml(s.label)+'</span></button>';
+  });
+  html+='</div>';
+  // Severity area (hidden until a symptom is selected)
+  html+='<div id="symptom-severity-area" style="display:none;margin-bottom:14px"></div>';
+  // Log button
+  html+='<button class="symptom-log-btn" id="btn-log-symptoms" disabled>\uD83D\uDCDD Log Symptoms</button>';
+  // Correlation insight
+  html+=renderSymptomCorrelation(pollenData);
+  // Weekly summary
+  html+=renderWeeklySymptomSummary();
+  // Recent history (last 7 days)
+  var recent=getSymptomEntriesLast7Days();
+  if(recent.length>0){
+    html+='<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:10px">';
+    html+='<div style="font-size:0.78rem;color:var(--text-secondary);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em">Last 7 Days</div>';
+    recent.slice(0,7).forEach(function(entry){
+      var d=new Date(entry.date+'T00:00:00');
+      var dayStr=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      html+='<div class="symptom-history-item">';
+      html+='<span class="symptom-history-date">'+escapeHtml(dayStr)+'</span>';
+      html+='<div class="symptom-history-tags">';
+      entry.symptoms.forEach(function(s){
+        var sym=SYMPTOMS.find(function(ss){return ss.key===s.key});
+        var label=sym?sym.emoji+' '+sym.label:s.key;
+        html+='<span class="symptom-history-tag severity-'+s.severity+'">'+escapeHtml(label)+' ('+SEVERITY_LABELS[s.severity-1]+')</span>';
+      });
+      html+='</div></div>';
+    });
+    html+='</div>';
+  }
+  html+='</div>';
+  return html;
+}
+
+function initSymptomTracker(){
+  var grid=document.getElementById('symptom-grid');
+  var severityArea=document.getElementById('symptom-severity-area');
+  var logBtn=document.getElementById('btn-log-symptoms');
+  if(!grid||!severityArea||!logBtn) return;
+  var selectedSymptoms={};// key -> severity (1,2,3)
+
+  function updateSeverityArea(){
+    var keys=Object.keys(selectedSymptoms);
+    if(keys.length===0){severityArea.style.display='none';logBtn.disabled=true;return}
+    severityArea.style.display='';
+    logBtn.disabled=false;
+    var html='<div style="font-size:0.78rem;color:var(--text-secondary);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em">Severity</div>';
+    keys.forEach(function(k){
+      var sym=SYMPTOMS.find(function(s){return s.key===k});
+      if(!sym) return;
+      var sev=selectedSymptoms[k];
+      html+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">'+
+        '<span style="font-size:0.85rem;font-weight:600;min-width:90px">'+sym.emoji+' '+escapeHtml(sym.label)+'</span>'+
+        '<div class="severity-toggle" data-symptom="'+k+'">';
+      for(var i=1;i<=3;i++){
+        html+='<button class="severity-opt'+(sev===i?' severity-selected':'')+'" data-sev="'+i+'" aria-label="'+SEVERITY_LABELS[i-1]+'" aria-pressed="'+(sev===i)+'">'+SEVERITY_LABELS[i-1]+'</button>';
+      }
+      html+='</div></div>';
+    });
+    severityArea.innerHTML=html;
+    // Bind severity clicks
+    severityArea.querySelectorAll('.severity-toggle').forEach(function(toggle){
+      var symptomKey=toggle.getAttribute('data-symptom');
+      toggle.querySelectorAll('.severity-opt').forEach(function(opt){
+        opt.addEventListener('click',function(){
+          var sev=parseInt(this.getAttribute('data-sev'));
+          selectedSymptoms[symptomKey]=sev;
+          toggle.querySelectorAll('.severity-opt').forEach(function(o){
+            var isSel=parseInt(o.getAttribute('data-sev'))===sev;
+            o.classList.toggle('severity-selected',isSel);
+            o.setAttribute('aria-pressed',isSel?'true':'false');
+          });
+        });
+      });
+    });
+  }
+
+  grid.querySelectorAll('.symptom-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var key=this.getAttribute('data-key');
+      if(selectedSymptoms[key]){
+        delete selectedSymptoms[key];
+        this.classList.remove('symptom-active');
+        this.setAttribute('aria-pressed','false');
+      } else {
+        selectedSymptoms[key]=1;// default mild
+        this.classList.add('symptom-active');
+        this.setAttribute('aria-pressed','true');
+      }
+      updateSeverityArea();
+    });
+  });
+
+  logBtn.addEventListener('click',function(){
+    var keys=Object.keys(selectedSymptoms);
+    if(keys.length===0) return;
+    var symptoms=keys.map(function(k){return {key:k,severity:selectedSymptoms[k]}});
+    saveSymptomEntry(symptoms);
+    // Show toast
+    var existing=document.querySelector('.med-taken-toast');
+    if(existing) existing.remove();
+    var toast=document.createElement('div');
+    toast.className='med-taken-toast';
+    toast.setAttribute('role','alert');
+    toast.textContent='Symptoms logged! \uD83D\uDCDD';
+    document.body.appendChild(toast);
+    setTimeout(function(){if(toast.parentNode)toast.remove()},2500);
+    // Re-render dashboard
+    if(state.pollenData&&state.weatherData){
+      renderDashboard(state.pollenData,state.weatherData);
+    }
+  });
+}
 
 /* ============ v13: Allergy Diary ============ */
 function getAllergyDiaryEntries(){
