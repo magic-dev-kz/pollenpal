@@ -698,10 +698,13 @@ color:var(--text-secondary);font-size:1rem;transition:background .2s,color .2s}
 .oc-footer{text-align:center;padding:20px 16px 24px;margin-top:24px}
 .oc-footer a{font-size:.78rem;color:var(--text-muted,var(--text-secondary,#888));text-decoration:none;opacity:.6;transition:opacity .2s}
 .oc-footer a:hover{opacity:1}
+.skip-link{position:absolute;top:-60px;left:8px;background:var(--accent);color:#fff;padding:8px 16px;border-radius:8px;z-index:10000;font-weight:600;text-decoration:none;transition:top .15s}
+.skip-link:focus{top:8px}
 </style>
 <link rel="manifest" href="manifest.json">
 </head>
 <body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
 <div class="app" id="app">
 <!-- Onboarding -->
 <div class="onboarding-overlay" id="onboarding" role="dialog" aria-label="Welcome to PollenPal" aria-modal="true" style="display:none">
@@ -1816,7 +1819,7 @@ function renderDashboard(pollenData,weatherData){
 
   // Safety Score
   html+='<section class="score-section animate-in" aria-label="Safety score">'+
-    '<div class="score-ring" role="img" aria-label="Safety score '+score+' out of 10" style="--ring-glow-intensity:'+(score/10).toFixed(2)+'">'+
+    '<div class="score-ring" role="meter" aria-valuemin="0" aria-valuemax="10" aria-valuenow="'+score.toFixed(1)+'" aria-valuetext="Safety score '+score+' out of 10" style="--ring-glow-intensity:'+(score/10).toFixed(2)+'">'+
     '<svg viewBox="0 0 180 180"><circle class="bg-ring" cx="90" cy="90" r="75"/>'+
     '<circle class="fg-ring" cx="90" cy="90" r="75" style="stroke:'+level.color+
     ';stroke-dasharray:'+circumference+';stroke-dashoffset:'+dashOffset+'"/></svg>'+

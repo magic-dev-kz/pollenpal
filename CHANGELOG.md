@@ -1,5 +1,12 @@
 # Changelog
 
+## v17.0 (2026-03-29) — Accessibility Pass
+
+- **Skip link**: "Skip to main content" link for keyboard users
+- **Score ring**: Changed from `role="img"` to `role="meter"` with `aria-valuemin`, `aria-valuemax`, `aria-valuenow`, and `aria-valuetext`
+- **Forecast cards**: Already had descriptive `aria-label` per card (verified)
+- SW cache bumped to `pollenpal-v17.0`
+
 ## v16.0 (2026-03-29) — Forecast Accuracy
 
 - **Forecast Accuracy**: Shows "Yesterday's forecast was X% accurate" by comparing predicted vs actual pollen score

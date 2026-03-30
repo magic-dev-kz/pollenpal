@@ -1,4 +1,4 @@
-var CACHE_NAME = 'pollenpal-v16.0';
+var CACHE_NAME = 'pollenpal-v17.0';
 var STATIC_ASSETS = [
   './',
   './index.html',
