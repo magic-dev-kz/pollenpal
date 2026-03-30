@@ -1,5 +1,10 @@
 # Changelog
 
+## v22.0 (2026-03-29) — Data Portability
+
+- **Export allergy profile + symptom log as JSON**: "Export All Data" button in Settings overlay downloads allergy profile, saved locations, symptom log, medication log/reminder, and alert threshold as a portable JSON backup file
+- SW cache bumped to `pollenpal-v22.0`
+
 ## v21.0 (2026-03-29) — Symptom Tracker
 
 - **Symptom Log**: New "How Are You Feeling?" card on dashboard with 5 symptom buttons (Sneezing, Itchy Eyes, Headache, Congestion, Breathing), severity toggle (Mild/Moderate/Severe) for each, and "Log Symptoms" action saving to localStorage with timestamp
