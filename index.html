@@ -3206,17 +3206,23 @@ function initAllergyDiary(){
   });
 }
 
-/* ============ Service Worker ============ */
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').catch(function(e){
-    console.warn('SW registration failed:',e);
-  });
-}
-
 /* ============ v7: Start Timers ============ */
-initPWAInstallBanner();
 startAutoRefresh();
 startUpdatedAgoTicker();
+
+/* ============ v26: Defer non-critical features to not block first paint ============ */
+var _deferInit=function(fn){
+  if('requestIdleCallback' in window){requestIdleCallback(fn);}
+  else{setTimeout(fn,100);}
+};
+_deferInit(function(){initPWAInstallBanner();});
+_deferInit(function(){
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(function(e){
+      console.warn('SW registration failed:',e);
+    });
+  }
+});
 
 })();
 </script>
