@@ -2078,7 +2078,8 @@ function loadData(){
     btn.classList.remove('refreshing');
   }).catch(function(err){
     console.error('Fetch error:',err);
-    renderError('Unable to load pollen data. Please check your connection and try again.');
+    // v19: User-friendly API error message
+    renderError('Couldn\u2019t load pollen data. Check your connection.');
     btn.classList.remove('refreshing');
   });
 }

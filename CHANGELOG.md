@@ -1,5 +1,10 @@
 # Changelog
 
+## v19.0 (2026-03-29) — Error Handling Hardening
+
+- **API error message**: Show "Couldn't load pollen data. Check your connection." on fetch failure
+- SW cache bumped to `pollenpal-v19.0`
+
 ## v18.0 (2026-03-29) — SEO / Meta Pass
 
 - **robots meta**: Added `<meta name="robots" content="index, follow">`
