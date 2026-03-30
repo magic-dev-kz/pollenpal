@@ -562,7 +562,19 @@ color:#C53030;border:1px solid rgba(229,62,62,0.2)}
 @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 
 /* Print */
-@media print{.location-bar{position:static}.modal-overlay,.onboarding-overlay{display:none!important}}
+@media print{
+  .location-bar{position:static}
+  .modal-overlay,.onboarding-overlay,.pwa-banner,.oc-footer,.toast,
+  .skip-link,.allergy-season-banner,.refresh-btn,.settings-btn,
+  .share-btn,
+  button{display:none!important}
+  body{background:#fff!important;color:#000!important;font-size:12pt}
+  .app,.main,.container{max-width:100%;padding:0;margin:0;background:#fff!important}
+  .safety-score,.forecast-card,.pollen-card{break-inside:avoid;border:1px solid #ccc;background:#fff!important;color:#000!important;box-shadow:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .safety-score h2,.forecast-card h3{color:#333!important}
+  .risk-meter{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  @page{margin:1.5cm;size:auto}
+}
 
 /* v8: Allergy Season Alert */
 .allergy-season-banner{border-left:4px solid var(--danger-high);

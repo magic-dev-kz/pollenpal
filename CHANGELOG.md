@@ -1,5 +1,10 @@
 # Changelog
 
+## v20.0 (2026-03-29) — Print Styles Improved
+
+- **Print stylesheet enhanced**: Full `@media print` rules — hides buttons, overlays, allergy banner; shows safety score + forecast cards; white bg, black text; risk meter colors preserved; page breaks on cards
+- SW cache bumped to `pollenpal-v20.0`
+
 ## v19.0 (2026-03-29) — Error Handling Hardening
 
 - **API error message**: Show "Couldn't load pollen data. Check your connection." on fetch failure
